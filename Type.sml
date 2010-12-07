@@ -25,11 +25,15 @@ struct
   fun checkType te ttable =
     case te of
       Cat.Int _ => Int
+    | Cat.Bool _ => Bool
+    | _ => raise Error("checkType fail", (1,1))
 
   (* Check pattern and return vtable *)
   fun checkPat pat ty ttable pos =
     case (pat,ty) of
       (Cat.NumP _, Int) => []
+    | (Cat.TrueP _, Bool) => []
+    | (Cat.FalseP _, Bool) => []
     | (Cat.VarP (x,p), ty) => [(x,ty)]
     | _ => raise Error ("Pattern doesn't match type", pos)
 
@@ -37,6 +41,8 @@ struct
   fun checkExp exp vtable ftable ttable =
     case exp of
       Cat.Num (n,pos) => Int
+    | Cat.True (n,pos) => Bool
+    | Cat.False (n,pos) => Bool
     | Cat.Var (x,pos) =>
        (case lookup x vtable of
 	  SOME t => t
@@ -63,6 +69,7 @@ struct
        (case checkExp e1 vtable ftable ttable of
           Int => Int
         | _ => raise Error ("Non-int argument to write",pos))
+    | _ => raise Error("Expression fail", (1,1))
 
   and checkMatch [(p,e)] tce vtable ftable ttable pos =
         let

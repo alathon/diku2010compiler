@@ -59,6 +59,25 @@ struct
           ([Mips.MOVE (xt,v)], (x,xt)::vtable)
         end
 
+    | Cat.FalseP (n,pos) =>
+      let
+        val t = "_falsePat_"^newName()
+      in
+        ([Mips.LI (t, makeConst 0), 
+          Mips.BNE (v,t,fail)], 
+          vtable)
+      end
+
+    | Cat.TrueP (n,pos) =>
+      let
+        val t = "_truePat_"^newName()
+      in
+        ([Mips.LI (t, makeConst ~1), 
+          Mips.BNE (v,t,fail)], 
+          vtable)
+      end
+
+
   (* compile expression *)
   fun compileExp e vtable place =
     case e of
@@ -68,6 +87,8 @@ struct
 	else
 	  [Mips.LUI (place, makeConst (n div 65536)),
 	   Mips.ORI (place, place, makeConst (n mod 65536))]
+    | Cat.True (n,pos) => [Mips.LI (place, makeConst ~1)]
+    | Cat.False (n,pos) => [Mips.LI (place, makeConst 0)]
     | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
     | Cat.Plus (e1,e2,pos) =>
         let
