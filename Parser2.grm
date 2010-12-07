@@ -3,9 +3,9 @@
 %token <(int*int)> LT GT EQUALS
 %token <(int*int)> ELSE IN
 %token <(int*int)> NOT AND OR
-%token <(int*int)> TYPE
 %token <string*(int*int)> ID
 %token <(int*int)> PLUS MINUS
+%token <(int*int)> TYPE
 %token <(int*int)> FUN LPAR RPAR ARROW
 %token <(int*int)> END MATCHARROW
 %token <(int*int)> INT BOOL BAR COLON
@@ -33,19 +33,20 @@
 %type <Cat.Match> Match
 %type <Cat.Pat> Pat
 %type <Cat.Pat list> Pats
-%type <Cat.TyDec list> TyDecs
 %type <Cat.FunDec list> FunDecs
+%type <Cat.TyDec list> TyDecs
 
 %%
 
-Prog :	 TyDecs FunDecs Exp EOF
-	                { ($1,$2,$3) }
+Prog :	  TyDecs FunDecs Exp EOF
+	                { ([],$1,$2) }
 ;
 
-TyDecs  : TYPE ID EQUALS LPAR Types RPAR TyDecs
-             { (#1 $2, $5, $1) :: $7 }
-        |    { [] }
+TyDecs  : TYPE ID EQUALS LPAR Types RBAR TyDecs
+          { (#1 $2) :: $7 }
+        | { [] }
 ;
+
 
 FunDecs : FUN ID COLON Type ARROW Type Match END FunDecs
 			{ (#1 $2, $4, $6, $7, $1) :: $9 }
