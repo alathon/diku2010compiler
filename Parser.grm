@@ -99,7 +99,7 @@ Exp :	  NUM		{ Cat.Num $1 }
         | LET Dec IN Exp { Cat.Let ($2, $4, $1) }
         | IF Exp THEN Exp ELSE Exp { Cat.If ($2, $4, $6, $1) }
 
-
+        | CASE Exp OF Match END { Cat.Case ($2, $4, $1) }
 	| ID Exp %prec WRITE
 			{ Cat.Apply (#1 $1, $2, #2 $1) }
 	| READ		{ Cat.Read $1 }
