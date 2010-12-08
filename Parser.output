@@ -871,5 +871,5 @@ Rules never reduced:
 	Exps : Exp SEMICOLON Exps  (37)
 
 
-38 terminals, 12 nonterminals
+37 terminals, 12 nonterminals
 39 grammar rules, 66 states

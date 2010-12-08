@@ -1,6 +1,6 @@
 %token <int*(int*int)> NUM
 %token <(int*int)> TRUE FALSE
-%token <(int*int)> LT GT EQUALS
+%token <(int*int)> LT EQUALS
 %token <(int*int)> ELSE IN
 %token <(int*int)> NOT AND OR
 %token <string*(int*int)> NULL

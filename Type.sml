@@ -26,7 +26,11 @@ struct
     case te of
       Cat.Int _ => Int
     | Cat.Bool _ => Bool
-    | _ => raise Error("checkType fail", (1,1))
+   (* | Cat.TyVar _ => case lookup te ttable of
+        SOME i => i
+      | NONE => raise Error ("Type lookup failure "^te, (1,1))
+    *)
+    | _ => raise Error("checkType failed", (1,1))
 
   (* Check pattern and return vtable *)
   fun checkPat pat ty ttable pos =
@@ -34,6 +38,7 @@ struct
       (Cat.NumP _, Int) => []
     | (Cat.TrueP _, Bool) => []
     | (Cat.FalseP _, Bool) => []
+    | (Cat.NullP _, Null) => []
     | (Cat.VarP (x,p), ty) => [(x,ty)]
     | _ => raise Error ("Pattern doesn't match type", pos)
 
@@ -43,6 +48,7 @@ struct
       Cat.Num (n,pos) => Int
     | Cat.True (n,pos) => Bool
     | Cat.False (n,pos) => Bool
+    (* | Cat.Null (n,pos) => Null *)
     | Cat.Var (x,pos) =>
        (case lookup x vtable of
 	  SOME t => t

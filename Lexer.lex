@@ -49,6 +49,8 @@ rule Token = parse
   | [`a`-`z` `A`-`Z`] [`a`-`z` `A`-`Z` `0`-`9` `_`]*
                         { keyword (getLexeme lexbuf,getPos lexbuf) }
   | `+`                 { Parser.PLUS (getPos lexbuf) }
+  | `<`                 { Parser.LT (getPos lexbuf) }
+  | `=`                 { Parser.EQUALS (getPos lexbuf) }
   | `-`                 { Parser.MINUS (getPos lexbuf) }
   | `(`                 { Parser.LPAR (getPos lexbuf) }
   | `)`                 { Parser.RPAR (getPos lexbuf) }
