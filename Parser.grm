@@ -4,6 +4,7 @@
 %token <(int*int)> ELSE IN
 %token <(int*int)> NOT AND OR
 %token <(int*int)> NULL
+%token <(int*int)> IF THEN
 %token <string*(int*int)> TYPE
 %token <string*(int*int)> ID
 %token <(int*int)> PLUS MINUS
@@ -32,6 +33,7 @@
 %type <Cat.Type list> Types
 %type <Cat.Exp> Exp
 %type <Cat.Exp list> Exps
+%type <Cat.Dec> Dec
 %type <Cat.Match> Match
 %type <Cat.Pat> Pat
 %type <Cat.Pat list> Pats
@@ -94,8 +96,8 @@ Exp :	  NUM		{ Cat.Num $1 }
         | NOT Exp       { Cat.Not ($2, $1) }
         | Exp AND Exp   { Cat.And ($1, $3, $2) }
         | Exp OR Exp    { Cat.Or ($1, $3, $2) }
-
-
+        | LET Dec IN Exp { Cat.Let ($2, $4, $1) }
+        | IF Exp THEN Exp ELSE Exp { Cat.If ($2, $4, $6, $1) }
 
 
 	| ID Exp %prec WRITE
@@ -109,3 +111,6 @@ Exp :	  NUM		{ Cat.Num $1 }
 Exps :  Exp { [$1] }
       | Exp SEMICOLON Exps { $1 :: $3 }
 ;
+
+Dec  :  Pat EQUALS Exp { [($1, $3, $2)] }
+      | Dec SEMICOLON Dec { $1 @ $3 }

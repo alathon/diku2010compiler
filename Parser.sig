@@ -23,16 +23,18 @@ type t__21__ = (int*int)
 type t__22__ = (int*int)
 type t__23__ = (int*int)
 type t__24__ = (int*int)
-type t__25__ = int*(int*int)
-type t__26__ = (int*int)
+type t__25__ = (int*int)
+type t__26__ = int*(int*int)
 type t__27__ = (int*int)
 type t__28__ = (int*int)
 type t__29__ = (int*int)
 type t__30__ = (int*int)
 type t__31__ = (int*int)
 type t__32__ = (int*int)
-type t__33__ = string*(int*int)
+type t__33__ = (int*int)
 type t__34__ = (int*int)
+type t__35__ = string*(int*int)
+type t__36__ = (int*int)
 in
 datatype token =
     AND of t__1__
@@ -50,25 +52,27 @@ datatype token =
   | FALSE of t__13__
   | FUN of t__14__
   | ID of t__15__
-  | IN of t__16__
-  | INT of t__17__
-  | LET of t__18__
-  | LPAR of t__19__
-  | LT of t__20__
-  | MATCHARROW of t__21__
-  | MINUS of t__22__
-  | NOT of t__23__
-  | NULL of t__24__
-  | NUM of t__25__
-  | OF of t__26__
-  | OR of t__27__
-  | PLUS of t__28__
-  | READ of t__29__
-  | RPAR of t__30__
-  | SEMICOLON of t__31__
-  | TRUE of t__32__
-  | TYPE of t__33__
-  | WRITE of t__34__
+  | IF of t__16__
+  | IN of t__17__
+  | INT of t__18__
+  | LET of t__19__
+  | LPAR of t__20__
+  | LT of t__21__
+  | MATCHARROW of t__22__
+  | MINUS of t__23__
+  | NOT of t__24__
+  | NULL of t__25__
+  | NUM of t__26__
+  | OF of t__27__
+  | OR of t__28__
+  | PLUS of t__29__
+  | READ of t__30__
+  | RPAR of t__31__
+  | SEMICOLON of t__32__
+  | THEN of t__33__
+  | TRUE of t__34__
+  | TYPE of t__35__
+  | WRITE of t__36__
 end;
 
 val Prog :
