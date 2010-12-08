@@ -31,7 +31,6 @@
        | "not"          => Parser.NOT pos
        | "and"          => Parser.AND pos
        | "or"           => Parser.OR pos
-       | "null"         => Parser.NULL (s, pos)
        | _              => Parser.ID (s, pos)
 
  }
@@ -52,6 +51,7 @@ rule Token = parse
   | `<`                 { Parser.LT (getPos lexbuf) }
   | `=`                 { Parser.EQUALS (getPos lexbuf) }
   | `-`                 { Parser.MINUS (getPos lexbuf) }
+  | `@`                 { Parser.NULL (getPos lexbuf) }
   | `(`                 { Parser.LPAR (getPos lexbuf) }
   | `)`                 { Parser.RPAR (getPos lexbuf) }
   | `:`                 { Parser.COLON (getPos lexbuf) }

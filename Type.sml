@@ -26,10 +26,7 @@ struct
     case te of
       Cat.Int _ => Int
     | Cat.Bool _ => Bool
-   (* | Cat.TyVar _ => case lookup te ttable of
-        SOME i => i
-      | NONE => raise Error ("Type lookup failure "^te, (1,1))
-    *)
+    | Cat.TyVar x => TyVar(#1 x)
     | _ => raise Error("checkType failed", (1,1))
 
   (* Check pattern and return vtable *)
@@ -48,7 +45,9 @@ struct
       Cat.Num (n,pos) => Int
     | Cat.True (n,pos) => Bool
     | Cat.False (n,pos) => Bool
-    (* | Cat.Null (n,pos) => Null *)
+    | Cat.Null (n,pos) => (case lookup n vtable of
+          SOME t => t
+        | _      => raise Error ("Unknown null-ref "^n,pos))
     | Cat.Var (x,pos) =>
        (case lookup x vtable of
 	  SOME t => t

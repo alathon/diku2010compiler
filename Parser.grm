@@ -3,7 +3,7 @@
 %token <(int*int)> LT EQUALS
 %token <(int*int)> ELSE IN
 %token <(int*int)> NOT AND OR
-%token <string*(int*int)> NULL
+%token <(int*int)> NULL
 %token <string*(int*int)> TYPE
 %token <string*(int*int)> ID
 %token <(int*int)> PLUS MINUS
@@ -67,7 +67,7 @@ Types :   Type  { [$1] }
 Pat :	  NUM		{ Cat.NumP $1 }
         | TRUE          { Cat.TrueP $1 }
         | FALSE         { Cat.FalseP $1 }
-        | NULL          { Cat.NullP (#2 $1) }
+        | NULL          { Cat.NullP $1 }
 	| ID 		{ Cat.VarP $1 }
 
 ;
@@ -85,7 +85,7 @@ Match :	  Pat MATCHARROW Exp
 Exp :	  NUM		{ Cat.Num $1 }
         | TRUE          { Cat.True $1 }
         | FALSE         { Cat.False $1 }
-        | NULL          { Cat.Null $1 }
+        | NULL COLON ID { Cat.Null ((#1 $3) ,$1) }
 	| ID		{ Cat.Var $1 }
 	| Exp PLUS Exp	{ Cat.Plus ($1, $3, $2) }
 	| Exp MINUS Exp	{ Cat.Minus ($1, $3, $2) }

@@ -33,30 +33,31 @@ local open Obj Lexing in
        | "not"          => Parser.NOT pos
        | "and"          => Parser.AND pos
        | "or"           => Parser.OR pos
-       | "null"         => Parser.NULL (s, pos)
        | _              => Parser.ID (s, pos)
 
  
-fun action_18 lexbuf = (
+fun action_19 lexbuf = (
  lexerError lexbuf "Illegal symbol in input" )
-and action_17 lexbuf = (
+and action_18 lexbuf = (
  Parser.EOF (getPos lexbuf) )
-and action_16 lexbuf = (
+and action_17 lexbuf = (
  Parser.BAR (getPos lexbuf) )
-and action_15 lexbuf = (
+and action_16 lexbuf = (
  Parser.MATCHARROW (getPos lexbuf) )
-and action_14 lexbuf = (
+and action_15 lexbuf = (
  Parser.ARROW (getPos lexbuf) )
-and action_13 lexbuf = (
+and action_14 lexbuf = (
  Parser.COMMA (getPos lexbuf) )
-and action_12 lexbuf = (
+and action_13 lexbuf = (
  Parser.SEMICOLON (getPos lexbuf) )
-and action_11 lexbuf = (
+and action_12 lexbuf = (
  Parser.COLON (getPos lexbuf) )
-and action_10 lexbuf = (
+and action_11 lexbuf = (
  Parser.RPAR (getPos lexbuf) )
-and action_9 lexbuf = (
+and action_10 lexbuf = (
  Parser.LPAR (getPos lexbuf) )
+and action_9 lexbuf = (
+ Parser.NULL (getPos lexbuf) )
 and action_8 lexbuf = (
  Parser.MINUS (getPos lexbuf) )
 and action_7 lexbuf = (
@@ -82,8 +83,8 @@ and action_0 lexbuf = (
  Token lexbuf )
 and state_0 lexbuf = (
  let val currChar = getNextChar lexbuf in
- if currChar >= #"A" andalso currChar <= #"Z" then  state_16 lexbuf
- else if currChar >= #"a" andalso currChar <= #"z" then  state_16 lexbuf
+ if currChar >= #"A" andalso currChar <= #"Z" then  state_17 lexbuf
+ else if currChar >= #"a" andalso currChar <= #"z" then  state_17 lexbuf
  else if currChar >= #"0" andalso currChar <= #"9" then  state_11 lexbuf
  else case currChar of
     #"\t" => state_3 lexbuf
@@ -91,28 +92,29 @@ and state_0 lexbuf = (
  |  #" " => state_3 lexbuf
  |  #"\n" => action_2 lexbuf
  |  #"\f" => action_2 lexbuf
- |  #"|" => action_16 lexbuf
+ |  #"|" => action_17 lexbuf
+ |  #"@" => action_9 lexbuf
  |  #"=" => state_15 lexbuf
  |  #"<" => action_6 lexbuf
- |  #";" => action_12 lexbuf
- |  #":" => action_11 lexbuf
+ |  #";" => action_13 lexbuf
+ |  #":" => action_12 lexbuf
  |  #"/" => state_10 lexbuf
  |  #"-" => state_9 lexbuf
- |  #"," => action_13 lexbuf
+ |  #"," => action_14 lexbuf
  |  #"+" => action_5 lexbuf
- |  #")" => action_10 lexbuf
- |  #"(" => action_9 lexbuf
- |  #"\^@" => action_17 lexbuf
- |  _ => action_18 lexbuf
+ |  #")" => action_11 lexbuf
+ |  #"(" => action_10 lexbuf
+ |  #"\^@" => action_18 lexbuf
+ |  _ => action_19 lexbuf
  end)
 and state_3 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
  setLexLastAction lexbuf (magic action_0);
  let val currChar = getNextChar lexbuf in
  case currChar of
-    #"\t" => state_23 lexbuf
- |  #"\r" => state_23 lexbuf
- |  #" " => state_23 lexbuf
+    #"\t" => state_24 lexbuf
+ |  #"\r" => state_24 lexbuf
+ |  #" " => state_24 lexbuf
  |  _ => backtrack lexbuf
  end)
 and state_9 lexbuf = (
@@ -120,22 +122,22 @@ and state_9 lexbuf = (
  setLexLastAction lexbuf (magic action_8);
  let val currChar = getNextChar lexbuf in
  case currChar of
-    #">" => action_14 lexbuf
+    #">" => action_15 lexbuf
  |  _ => backtrack lexbuf
  end)
 and state_10 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
- setLexLastAction lexbuf (magic action_18);
+ setLexLastAction lexbuf (magic action_19);
  let val currChar = getNextChar lexbuf in
  case currChar of
-    #"/" => state_21 lexbuf
+    #"/" => state_22 lexbuf
  |  _ => backtrack lexbuf
  end)
 and state_11 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
  setLexLastAction lexbuf (magic action_3);
  let val currChar = getNextChar lexbuf in
- if currChar >= #"0" andalso currChar <= #"9" then  state_20 lexbuf
+ if currChar >= #"0" andalso currChar <= #"9" then  state_21 lexbuf
  else backtrack lexbuf
  end)
 and state_15 lexbuf = (
@@ -143,55 +145,55 @@ and state_15 lexbuf = (
  setLexLastAction lexbuf (magic action_7);
  let val currChar = getNextChar lexbuf in
  case currChar of
-    #">" => action_15 lexbuf
+    #">" => action_16 lexbuf
  |  _ => backtrack lexbuf
  end)
-and state_16 lexbuf = (
+and state_17 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
  setLexLastAction lexbuf (magic action_4);
  let val currChar = getNextChar lexbuf in
- if currChar >= #"0" andalso currChar <= #"9" then  state_18 lexbuf
- else if currChar >= #"A" andalso currChar <= #"Z" then  state_18 lexbuf
- else if currChar >= #"a" andalso currChar <= #"z" then  state_18 lexbuf
+ if currChar >= #"0" andalso currChar <= #"9" then  state_19 lexbuf
+ else if currChar >= #"A" andalso currChar <= #"Z" then  state_19 lexbuf
+ else if currChar >= #"a" andalso currChar <= #"z" then  state_19 lexbuf
  else case currChar of
-    #"_" => state_18 lexbuf
+    #"_" => state_19 lexbuf
  |  _ => backtrack lexbuf
  end)
-and state_18 lexbuf = (
+and state_19 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
  setLexLastAction lexbuf (magic action_4);
  let val currChar = getNextChar lexbuf in
- if currChar >= #"0" andalso currChar <= #"9" then  state_18 lexbuf
- else if currChar >= #"A" andalso currChar <= #"Z" then  state_18 lexbuf
- else if currChar >= #"a" andalso currChar <= #"z" then  state_18 lexbuf
+ if currChar >= #"0" andalso currChar <= #"9" then  state_19 lexbuf
+ else if currChar >= #"A" andalso currChar <= #"Z" then  state_19 lexbuf
+ else if currChar >= #"a" andalso currChar <= #"z" then  state_19 lexbuf
  else case currChar of
-    #"_" => state_18 lexbuf
+    #"_" => state_19 lexbuf
  |  _ => backtrack lexbuf
  end)
-and state_20 lexbuf = (
+and state_21 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
  setLexLastAction lexbuf (magic action_3);
  let val currChar = getNextChar lexbuf in
- if currChar >= #"0" andalso currChar <= #"9" then  state_20 lexbuf
+ if currChar >= #"0" andalso currChar <= #"9" then  state_21 lexbuf
  else backtrack lexbuf
  end)
-and state_21 lexbuf = (
+and state_22 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
  setLexLastAction lexbuf (magic action_1);
  let val currChar = getNextChar lexbuf in
  case currChar of
     #"\^@" => backtrack lexbuf
  |  #"\n" => backtrack lexbuf
- |  _ => state_21 lexbuf
+ |  _ => state_22 lexbuf
  end)
-and state_23 lexbuf = (
+and state_24 lexbuf = (
  setLexLastPos lexbuf (getLexCurrPos lexbuf);
  setLexLastAction lexbuf (magic action_0);
  let val currChar = getNextChar lexbuf in
  case currChar of
-    #"\t" => state_23 lexbuf
- |  #"\r" => state_23 lexbuf
- |  #" " => state_23 lexbuf
+    #"\t" => state_24 lexbuf
+ |  #"\r" => state_24 lexbuf
+ |  #" " => state_24 lexbuf
  |  _ => backtrack lexbuf
  end)
 and Token lexbuf =
@@ -200,6 +202,6 @@ and Token lexbuf =
    state_0 lexbuf)
 
 (* The following checks type consistency of actions *)
-val _ = fn _ => [action_18, action_17, action_16, action_15, action_14, action_13, action_12, action_11, action_10, action_9, action_8, action_7, action_6, action_5, action_4, action_3, action_2, action_1, action_0];
+val _ = fn _ => [action_19, action_18, action_17, action_16, action_15, action_14, action_13, action_12, action_11, action_10, action_9, action_8, action_7, action_6, action_5, action_4, action_3, action_2, action_1, action_0];
 
 end

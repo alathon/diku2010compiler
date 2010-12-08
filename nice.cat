@@ -1,1 +1,6 @@
-true
+fun test : int -> int
+  @ => 5
+| n => n
+end
+
+write test 5
