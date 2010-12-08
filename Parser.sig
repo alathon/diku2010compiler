@@ -23,8 +23,8 @@ type t__21__ = (int*int)
 type t__22__ = (int*int)
 type t__23__ = (int*int)
 type t__24__ = (int*int)
-type t__25__ = int*(int*int)
-type t__26__ = (int*int)
+type t__25__ = string*(int*int)
+type t__26__ = int*(int*int)
 type t__27__ = (int*int)
 type t__28__ = (int*int)
 type t__29__ = (int*int)
@@ -32,7 +32,8 @@ type t__30__ = (int*int)
 type t__31__ = (int*int)
 type t__32__ = (int*int)
 type t__33__ = (int*int)
-type t__34__ = (int*int)
+type t__34__ = string*(int*int)
+type t__35__ = (int*int)
 in
 datatype token =
     AND of t__1__
@@ -59,16 +60,17 @@ datatype token =
   | MATCHARROW of t__22__
   | MINUS of t__23__
   | NOT of t__24__
-  | NUM of t__25__
-  | OF of t__26__
-  | OR of t__27__
-  | PLUS of t__28__
-  | READ of t__29__
-  | RPAR of t__30__
-  | SEMICOLON of t__31__
-  | TRUE of t__32__
-  | TYPE of t__33__
-  | WRITE of t__34__
+  | NULL of t__25__
+  | NUM of t__26__
+  | OF of t__27__
+  | OR of t__28__
+  | PLUS of t__29__
+  | READ of t__30__
+  | RPAR of t__31__
+  | SEMICOLON of t__32__
+  | TRUE of t__33__
+  | TYPE of t__34__
+  | WRITE of t__35__
 end;
 
 val Prog :

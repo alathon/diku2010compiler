@@ -28,6 +28,10 @@
        | "fun"          => Parser.FUN pos
        | "read"         => Parser.READ pos
        | "write"        => Parser.WRITE pos
+       | "not"          => Parser.NOT pos
+       | "and"          => Parser.AND pos
+       | "or"           => Parser.OR pos
+       | "null"         => Parser.NULL (s, pos)
        | _              => Parser.ID (s, pos)
 
  }
@@ -39,8 +43,6 @@ rule Token = parse
                           lineStartPos :=  getLexemeStart lexbuf
 			                   :: !lineStartPos;
                           Token lexbuf } (* newlines *)
-   | "true"              { Parser.TRUE (getPos lexbuf) }
-  | "false"             { Parser.FALSE (getPos lexbuf) }
  | [`0`-`9`]+          { case Int.fromString (getLexeme lexbuf) of
                                NONE   => lexerError lexbuf "Bad integer"
                              | SOME i => Parser.NUM (i, getPos lexbuf) }

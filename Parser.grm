@@ -3,7 +3,8 @@
 %token <(int*int)> LT GT EQUALS
 %token <(int*int)> ELSE IN
 %token <(int*int)> NOT AND OR
-%token <(int*int)> TYPE
+%token <string*(int*int)> NULL
+%token <string*(int*int)> TYPE
 %token <string*(int*int)> ID
 %token <(int*int)> PLUS MINUS
 %token <(int*int)> FUN LPAR RPAR ARROW
@@ -13,6 +14,7 @@
 %token <(int*int)> READ WRITE EOF
 %token <(int*int)> AT
 %token <(int*int)> LET CASE OF READ
+
 
 %right BAR
 %right MATCHARROW
@@ -43,7 +45,7 @@ Prog :	 TyDecs FunDecs Exp EOF
 ;
 
 TyDecs  : TYPE ID EQUALS LPAR Types RPAR TyDecs
-             { (#1 $2, $5, $1) :: $7 }
+             { (#1 $2, $5, #2 $1) :: $7 }
         |    { [] }
 ;
 
@@ -63,9 +65,11 @@ Types :   Type  { [$1] }
 ;
 
 Pat :	  NUM		{ Cat.NumP $1 }
-	| ID 		{ Cat.VarP $1 }
-        | FALSE         { Cat.FalseP $1 }
         | TRUE          { Cat.TrueP $1 }
+        | FALSE         { Cat.FalseP $1 }
+        | NULL          { Cat.NullP (#2 $1) }
+	| ID 		{ Cat.VarP $1 }
+
 ;
 
 Pats :    Pat { [$1] }
@@ -81,9 +85,19 @@ Match :	  Pat MATCHARROW Exp
 Exp :	  NUM		{ Cat.Num $1 }
         | TRUE          { Cat.True $1 }
         | FALSE         { Cat.False $1 }
+        | NULL          { Cat.Null $1 }
 	| ID		{ Cat.Var $1 }
 	| Exp PLUS Exp	{ Cat.Plus ($1, $3, $2) }
 	| Exp MINUS Exp	{ Cat.Minus ($1, $3, $2) }
+        | Exp EQUALS Exp { Cat.Equal ($1, $3, $2) }
+        | Exp LT Exp    { Cat.Less ($1, $3, $2) }
+        | NOT Exp       { Cat.Not ($2, $1) }
+        | Exp AND Exp   { Cat.And ($1, $3, $2) }
+        | Exp OR Exp    { Cat.Or ($1, $3, $2) }
+
+
+
+
 	| ID Exp %prec WRITE
 			{ Cat.Apply (#1 $1, $2, #2 $1) }
 	| READ		{ Cat.Read $1 }
