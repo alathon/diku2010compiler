@@ -1,0 +1,5 @@
+type c = (bool)
+fun f : int -> c
+   0 => (true):c
+end
+f 0

@@ -1,1 +1,8 @@
-@:list
+type c = (bool)
+type e = (int,bool)
+
+fun a: int -> c
+  x => (true):c
+end
+
+a 5

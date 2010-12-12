@@ -39,6 +39,23 @@ struct
     | (Cat.VarP (x,p), ty) => [(x,ty)]
     | _ => raise Error ("Pattern doesn't match type", pos)
 
+(*
+  fun checkPatType pat ty =
+    case pat of
+      Cat.NumP _ => 
+        if ty = Int then true else raise Error("",pos)
+    | Cat.TrueP _ => 
+        if ty = Bool then true else raise Error("", pos)
+    | Cat.FalseP _ =>
+        if ty = Bool then true else raise Error("", pos)
+    | Cat.TupleP  =>
+        if
+    (* | Cat.NullP _ => Null *)
+    | Cat.TupleP _ => Tuple
+    | Cat.VarP _ => ty
+    | _ => raise Error ("Unknown pattern", pos)
+*)
+
   (* check expression and return type *)
   fun checkExp exp vtable ftable ttable =
     case exp of
@@ -46,17 +63,92 @@ struct
     | Cat.True (n,pos) => Bool
     | Cat.False (n,pos) => Bool
     | Cat.Null (n,pos) => (case lookup n ttable of
-          SOME t => t
+          SOME t => TyVar(n)
         | _      => raise Error ("Unknown type: "^n,pos))
     | Cat.Var (x,pos) =>
        (case lookup x vtable of
 	  SOME t => t
-        | _ => raise Error ("Unknown variable "^x,pos))
+        | NONE => raise Error ("Unknown variable "^x,pos))
+
+    | Cat.MkTuple (explist, tyname, pos) =>
+      let
+        val tylist2 = 
+          (case (lookup tyname ttable) of
+             SOME i => i
+           | _ => raise Error("nice",pos))
+ 
+        fun conv (Cat.Bool _) = Bool
+          | conv (Cat.Int _) = Int
+          | conv _ = raise Error("Lala", pos)
+
+        fun iter (t::tylist) (e::explist) pos =
+          if conv t = checkExp e vtable ftable ttable
+            then iter tylist explist pos
+          else 
+            raise Error("OHMAHGAWD", pos)
+          | iter [] (e::explist) pos =
+            raise Error("OHMAHGAWD 1", pos)
+          | iter (t::tylist) [] pos =
+            raise Error("OHMAHGAWD 2", pos)
+          | iter [] [] pos = ()
+
+        val _ = iter tylist2 explist pos
+          
+     in
+         TyVar(tyname)
+      end
+
+
+    | Cat.Less (e1,e2,pos) =>
+       (case (checkExp e1 vtable ftable ttable,
+              checkExp e2 vtable ftable ttable) of
+          (Int,Int) => Bool
+        | _ => raise Error ("Non-int argument to <",pos))
+ 
+    | Cat.Equal (e1,e2,pos) =>
+       (case (checkExp e1 vtable ftable ttable,
+              checkExp e2 vtable ftable ttable) of
+          (Int,Int) => Bool
+        | _ => raise Error ("Non-int argument to =",pos))
+    
+    | Cat.If (e1,e2,e3,pos) =>
+      let
+        val v1 = checkExp e1 vtable ftable ttable
+        val v2 = checkExp e2 vtable ftable ttable
+        val v3 = checkExp e3 vtable ftable ttable
+      in
+        if v2 <> v3 then raise Error ("Incompatible types", pos)
+        else if v1 <> Bool then raise Error ("Non-boolean expression", pos)
+        else Bool
+      end
+(*
+    | Cat.Case (exp, matches, pos) => 
+      (let
+        val (m1::m1s) = matches
+        val ety1 = checkExp (#2 m1) vtable ftable ttable
+        fun checkMatch ty (p, e) =
+          let
+            val ety = checkExp e vtable ftable ttable
+          in
+            if ety1 = ety andalso checkPat p = ty then ty1 
+            else raise Error("pattern fail", pos)
+          end
+      in
+        List.nth(1, List.map (checkMatch (checkExp exp vtable ftable ttable)) matches)
+      end)
+    | Cat.Case (exp,[],pos) => 
+      raise Error("No matches in case",pos)
+*)
+    | Cat.Not (e1,pos) => Bool
+    | Cat.And (e1,e2,pos) => Bool
+    | Cat.Or (e1,e2,pos) => Bool
+
     | Cat.Plus (e1,e2,pos) =>
        (case (checkExp e1 vtable ftable ttable,
               checkExp e2 vtable ftable ttable) of
           (Int,Int) => Int
         | _ => raise Error ("Non-int argument to +",pos))
+    
     | Cat.Minus (e1,e2,pos) =>
        (case (checkExp e1 vtable ftable ttable,
               checkExp e2 vtable ftable ttable) of
@@ -94,6 +186,15 @@ struct
     | checkMatch [] tce vtable ftable ttable pos =
         raise Error ("Empty match",pos)
 
+  fun getTyDecs [] ftable = ftable
+    | getTyDecs ((ty, tylist, pos)::fs) ftable =
+        if List.exists (fn (g,_)=>ty=g) ftable
+	then raise 
+          Error ("Duplicate declaration of function "^ty,pos)
+        else getTyDecs fs
+	    ((ty, tylist) :: ftable)
+
+
   fun getFunDecs [] ttable ftable = ftable
     | getFunDecs ((f, targ, tresult, m, pos)::fs) ttable ftable =
         if List.exists (fn (g,_)=>f=g) ftable
@@ -115,7 +216,7 @@ struct
 
   fun checkProgram (tyDecs, funDecs, e) =
     let
-      val ttable = []
+      val ttable = getTyDecs tyDecs []
       val ftable = getFunDecs funDecs ttable []
       val _ = List.map (checkFunDec ftable ttable) funDecs
     in
