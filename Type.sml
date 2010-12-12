@@ -45,9 +45,9 @@ struct
       Cat.Num (n,pos) => Int
     | Cat.True (n,pos) => Bool
     | Cat.False (n,pos) => Bool
-    | Cat.Null (n,pos) => (case lookup n vtable of
+    | Cat.Null (n,pos) => (case lookup n ttable of
           SOME t => t
-        | _      => raise Error ("Unknown null-ref "^n,pos))
+        | _      => raise Error ("Unknown type: "^n,pos))
     | Cat.Var (x,pos) =>
        (case lookup x vtable of
 	  SOME t => t

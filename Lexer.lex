@@ -21,6 +21,7 @@
  fun keyword (s, pos) =
      case s of
          "end"          => Parser.END pos
+       | "type"         => Parser.TYPE pos
        | "int"          => Parser.INT pos
        | "bool"         => Parser.BOOL pos
        | "true"         => Parser.TRUE pos
@@ -31,6 +32,14 @@
        | "not"          => Parser.NOT pos
        | "and"          => Parser.AND pos
        | "or"           => Parser.OR pos
+       | "let"          => Parser.LET pos
+       | "if"           => Parser.IF pos
+       | "then"         => Parser.THEN pos
+       | "else"         => Parser.ELSE pos
+       | "case"         => Parser.CASE pos
+       | "of"           => Parser.OF pos
+       | "end"          => Parser.END pos
+       | "in"           => Parser.IN pos
        | _              => Parser.ID (s, pos)
 
  }
@@ -45,16 +54,16 @@ rule Token = parse
  | [`0`-`9`]+          { case Int.fromString (getLexeme lexbuf) of
                                NONE   => lexerError lexbuf "Bad integer"
                              | SOME i => Parser.NUM (i, getPos lexbuf) }
-  | [`a`-`z` `A`-`Z`] [`a`-`z` `A`-`Z` `0`-`9` `_`]*
+  | [`a`-`z` `A`-`Z`] [`a`-`z` `A`-`Z` `0`-`9` `_` `@`]*
                         { keyword (getLexeme lexbuf,getPos lexbuf) }
   | `+`                 { Parser.PLUS (getPos lexbuf) }
   | `<`                 { Parser.LT (getPos lexbuf) }
   | `=`                 { Parser.EQUALS (getPos lexbuf) }
   | `-`                 { Parser.MINUS (getPos lexbuf) }
-  | `@`                 { Parser.NULL (getPos lexbuf) }
   | `(`                 { Parser.LPAR (getPos lexbuf) }
   | `)`                 { Parser.RPAR (getPos lexbuf) }
   | `:`                 { Parser.COLON (getPos lexbuf) }
+  | `@`                 { Parser.NULL (getPos lexbuf) }
   | `;`                 { Parser.SEMICOLON (getPos lexbuf) }
   | `,`                 { Parser.COMMA (getPos lexbuf) }
   | "->"                { Parser.ARROW (getPos lexbuf) }

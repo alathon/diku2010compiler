@@ -16,7 +16,7 @@
 %token <(int*int)> AT
 %token <(int*int)> LET CASE OF READ
 
-
+%left SEMICOLON COMMA
 %right BAR
 %right MATCHARROW
 %left PLUS MINUS
@@ -63,7 +63,7 @@ Type :	  INT		{ Cat.Int $1 }
 ;
 
 Types :   Type  { [$1] }
-        | Type COMMA Types { $1 :: $3 }
+        | Types COMMA Types { $1 @ $3 }
 ;
 
 Pat :	  NUM		{ Cat.NumP $1 }
@@ -71,11 +71,11 @@ Pat :	  NUM		{ Cat.NumP $1 }
         | FALSE         { Cat.FalseP $1 }
         | NULL          { Cat.NullP $1 }
 	| ID 		{ Cat.VarP $1 }
-
+        | LPAR Pats RPAR { Cat.TupleP ($2, $1) }
 ;
 
 Pats :    Pat { [$1] }
-        | Pat COMMA Pats      { $1 :: $3 }
+        | Pats COMMA Pats      { $1 @ $3 }
 ;
 
 Match :	  Pat MATCHARROW Exp
@@ -89,6 +89,8 @@ Exp :	  NUM		{ Cat.Num $1 }
         | FALSE         { Cat.False $1 }
         | NULL COLON ID { Cat.Null ((#1 $3) ,$1) }
 	| ID		{ Cat.Var $1 }
+        | LPAR Exps RPAR COLON ID
+                { Cat.MkTuple ($2, #1 $5, $1) }
 	| Exp PLUS Exp	{ Cat.Plus ($1, $3, $2) }
 	| Exp MINUS Exp	{ Cat.Minus ($1, $3, $2) }
         | Exp EQUALS Exp { Cat.Equal ($1, $3, $2) }
@@ -107,9 +109,8 @@ Exp :	  NUM		{ Cat.Num $1 }
 	| LPAR Exp RPAR	{ $2 }
 ;
 
-
 Exps :  Exp { [$1] }
-      | Exp SEMICOLON Exps { $1 :: $3 }
+      | Exps SEMICOLON Exps { $1 @ $3 }
 ;
 
 Dec  :  Pat EQUALS Exp { [($1, $3, $2)] }

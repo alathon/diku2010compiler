@@ -1,6 +1,6 @@
-fun test : int -> int
-  @ => 5
-| n => n
+fun t : bool -> int
+  true => 1
+| false => 0
 end
 
-write test 5
+write t true

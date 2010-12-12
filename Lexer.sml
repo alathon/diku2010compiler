@@ -23,6 +23,7 @@ local open Obj Lexing in
  fun keyword (s, pos) =
      case s of
          "end"          => Parser.END pos
+       | "type"         => Parser.TYPE pos
        | "int"          => Parser.INT pos
        | "bool"         => Parser.BOOL pos
        | "true"         => Parser.TRUE pos
@@ -33,6 +34,14 @@ local open Obj Lexing in
        | "not"          => Parser.NOT pos
        | "and"          => Parser.AND pos
        | "or"           => Parser.OR pos
+       | "let"          => Parser.LET pos
+       | "if"           => Parser.IF pos
+       | "then"         => Parser.THEN pos
+       | "else"         => Parser.ELSE pos
+       | "case"         => Parser.CASE pos
+       | "of"           => Parser.OF pos
+       | "end"          => Parser.END pos
+       | "in"           => Parser.IN pos
        | _              => Parser.ID (s, pos)
 
  
@@ -51,13 +60,13 @@ and action_14 lexbuf = (
 and action_13 lexbuf = (
  Parser.SEMICOLON (getPos lexbuf) )
 and action_12 lexbuf = (
- Parser.COLON (getPos lexbuf) )
-and action_11 lexbuf = (
- Parser.RPAR (getPos lexbuf) )
-and action_10 lexbuf = (
- Parser.LPAR (getPos lexbuf) )
-and action_9 lexbuf = (
  Parser.NULL (getPos lexbuf) )
+and action_11 lexbuf = (
+ Parser.COLON (getPos lexbuf) )
+and action_10 lexbuf = (
+ Parser.RPAR (getPos lexbuf) )
+and action_9 lexbuf = (
+ Parser.LPAR (getPos lexbuf) )
 and action_8 lexbuf = (
  Parser.MINUS (getPos lexbuf) )
 and action_7 lexbuf = (
@@ -93,17 +102,17 @@ and state_0 lexbuf = (
  |  #"\n" => action_2 lexbuf
  |  #"\f" => action_2 lexbuf
  |  #"|" => action_17 lexbuf
- |  #"@" => action_9 lexbuf
+ |  #"@" => action_12 lexbuf
  |  #"=" => state_15 lexbuf
  |  #"<" => action_6 lexbuf
  |  #";" => action_13 lexbuf
- |  #":" => action_12 lexbuf
+ |  #":" => action_11 lexbuf
  |  #"/" => state_10 lexbuf
  |  #"-" => state_9 lexbuf
  |  #"," => action_14 lexbuf
  |  #"+" => action_5 lexbuf
- |  #")" => action_11 lexbuf
- |  #"(" => action_10 lexbuf
+ |  #")" => action_10 lexbuf
+ |  #"(" => action_9 lexbuf
  |  #"\^@" => action_18 lexbuf
  |  _ => action_19 lexbuf
  end)
@@ -153,7 +162,7 @@ and state_17 lexbuf = (
  setLexLastAction lexbuf (magic action_4);
  let val currChar = getNextChar lexbuf in
  if currChar >= #"0" andalso currChar <= #"9" then  state_19 lexbuf
- else if currChar >= #"A" andalso currChar <= #"Z" then  state_19 lexbuf
+ else if currChar >= #"@" andalso currChar <= #"Z" then  state_19 lexbuf
  else if currChar >= #"a" andalso currChar <= #"z" then  state_19 lexbuf
  else case currChar of
     #"_" => state_19 lexbuf
@@ -164,7 +173,7 @@ and state_19 lexbuf = (
  setLexLastAction lexbuf (magic action_4);
  let val currChar = getNextChar lexbuf in
  if currChar >= #"0" andalso currChar <= #"9" then  state_19 lexbuf
- else if currChar >= #"A" andalso currChar <= #"Z" then  state_19 lexbuf
+ else if currChar >= #"@" andalso currChar <= #"Z" then  state_19 lexbuf
  else if currChar >= #"a" andalso currChar <= #"z" then  state_19 lexbuf
  else case currChar of
     #"_" => state_19 lexbuf
