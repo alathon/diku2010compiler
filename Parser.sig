@@ -33,7 +33,7 @@ type t__31__ = (int*int)
 type t__32__ = (int*int)
 type t__33__ = (int*int)
 type t__34__ = (int*int)
-type t__35__ = string*(int*int)
+type t__35__ = (int*int)
 type t__36__ = (int*int)
 in
 datatype token =

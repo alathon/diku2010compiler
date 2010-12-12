@@ -5,7 +5,7 @@
 %token <(int*int)> NOT AND OR
 %token <(int*int)> NULL
 %token <(int*int)> IF THEN
-%token <string*(int*int)> TYPE
+%token <(int*int)> TYPE
 %token <string*(int*int)> ID
 %token <(int*int)> PLUS MINUS
 %token <(int*int)> FUN LPAR RPAR ARROW
@@ -47,7 +47,7 @@ Prog :	 TyDecs FunDecs Exp EOF
 ;
 
 TyDecs  : TYPE ID EQUALS LPAR Types RPAR TyDecs
-             { (#1 $2, $5, #2 $1) :: $7 }
+             { (#1 $2, $5, $1) :: $7 }
         |    { [] }
 ;
 

@@ -33,7 +33,7 @@ type t__31__ = (int*int)
 type t__32__ = (int*int)
 type t__33__ = (int*int)
 type t__34__ = (int*int)
-type t__35__ = string*(int*int)
+type t__35__ = (int*int)
 type t__36__ = (int*int)
 in
 datatype token =
@@ -324,7 +324,7 @@ in
 (* Rule 2, file Parser.grm, line 50 *)
 val _ = update_ yyact 2
 (fn () => repr(let
-val d__1__ = peekVal 6 : string*(int*int)
+val d__1__ = peekVal 6 : (int*int)
 val d__2__ = peekVal 5 : string*(int*int)
 val d__3__ = peekVal 4 : (int*int)
 val d__4__ = peekVal 3 : (int*int)
@@ -332,7 +332,7 @@ val d__5__ = peekVal 2 : Cat.Type list
 val d__6__ = peekVal 1 : (int*int)
 val d__7__ = peekVal 0 : Cat.TyDec list
 in
-( (#1 (d__2__), (d__5__), #2 (d__1__)) :: (d__7__) ) end : Cat.TyDec list))
+( (#1 (d__2__), (d__5__), (d__1__)) :: (d__7__) ) end : Cat.TyDec list))
 ;
 (* Rule 3, file Parser.grm, line 51 *)
 val _ = update_ yyact 3

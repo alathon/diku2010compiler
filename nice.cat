@@ -1,6 +1,1 @@
-fun t : bool -> int
-  true => 1
-| false => 0
-end
-
-write t true
+@:list
