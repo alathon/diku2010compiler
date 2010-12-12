@@ -2,7 +2,7 @@ type c = (bool)
 type e = (int,bool)
 
 fun a: int -> c
-  x => (true):c
+  x => (5):c
 end
 
 a 5

@@ -19,6 +19,7 @@
 %left SEMICOLON COMMA
 %right BAR
 %right MATCHARROW
+%right LPAR RPAR
 %left PLUS MINUS
 %nonassoc LT EQUALS
 %right ELSE IN
