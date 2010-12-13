@@ -1,5 +1,5 @@
 fun g : bool -> int
-	x => case x of true => 1 | false => 0 end
+	x => let y = 5 in y
 end
 
 write g false

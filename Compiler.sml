@@ -181,6 +181,12 @@ struct
         in
           cf @ (compileExp (Cat.Apply (lf, e, p)) vtable place)
         end
+
+    | Cat.Let ([], e, _) => (compileExp e vtable place)
+    | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
+        compileExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos)) vtable
+        place
+
     | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
     | Cat.Plus (e1,e2,pos) =>
         let
