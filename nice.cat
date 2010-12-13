@@ -5,8 +5,12 @@ fun g : c -> int
 (5,5) => let x = 5; y = 3 in x+x
 end
 
+fun g : c -> int
+(5,5) => let x = 5; y = 3 in x+x
+end
+
 fun f: int -> c
   x => (x,x):c
 end
 
-write g f 5
+f 5

@@ -6,27 +6,24 @@ struct
 
   type pos = int*int
 
+  (** A striped datatype for the types of expressions. **)
   datatype Type = Int | Bool | TyVar of string
 
-  (* lookup function for symbol table as list of (name,value) pairs *)
+  (**
+  * Lookup the value of some symbol in some symbol table.
+  **)
   fun lookup needle [] = NONE
-    | lookup needle ((key, value) :: haystack) =
+    | lookup needle ((key, value, _) :: haystack) =
         if needle = key then SOME value else lookup needle haystack
 
-  (* combine two symbol tables and check for duplicates *)
-  fun combineTables [] table2 p = table2
-    | combineTables ((x,v)::table1) table2 p =
-        case lookup x table2 of
-          SOME _ => raise Error ("Repeated identifier "^x,p)
-        | NONE => (x,v) :: combineTables table1 table2 p
-
-  (* check that type expression is valid and return its type *)
-  fun checkType te =
-    case te of
+  (**
+  * Strip extra type information returned from the parser.
+  **)
+  fun stripType x =
+    case x of
       Cat.Int _ => Int
     | Cat.Bool _ => Bool
     | Cat.TyVar (name, _) => TyVar(name)
-    | _ => raise Error("checkType failed", (1,1))
 
   (* Check pattern and return vtable *)
   fun checkPat [] [] _ _ vtable = vtable
@@ -41,16 +38,18 @@ struct
     | (Cat.NullP _, Null) => rest
     | (Cat.VarP (name,p), tyvar) => 
         let
-          val x = (case (lookup name vtable) of
-                     SOME _ => raise Error ("Duplicate definition", p)
-                   | NONE => ())
+          val x = 
+            (case (lookup name vtable) of
+               SOME _ => raise Error ("Duplicate definition", p)
+             | NONE => ())
+          val value = (name, tyvar, p)
          in
-           (x;(name, tyvar) :: (checkPat pats tys ttable pos ((name,
-           tyvar)::vtable)))
+           (x; (value :: (checkPat pats tys ttable pos (value :: vtable))))
          end
     | (Cat.TupleP (plist, p), TyVar(name))  =>
         let val tupletys = 
-          (case (lookup name ttable) of SOME v => List.map checkType v
+          (case (lookup name ttable) of 
+             SOME x => List.map stripType x
            | NONE => raise Error ("Undefined type "^name, p))
         in
           (checkPat plist tupletys ttable pos vtable) @ rest
@@ -59,7 +58,7 @@ struct
     )
     end
 
-  (* check expression and return type *)
+  (* Type-checks an expression, returns it's type. *)
   fun checkExp exp vtable ftable ttable =
   let 
     fun shortCheckExp e = checkExp e vtable ftable ttable 
@@ -72,6 +71,7 @@ struct
   in
     case (exp) of
       Cat.Num   _ => Int
+    | Cat.Read  _ => Int
     
     | Cat.True  _ => Bool
     | Cat.False _ => Bool
@@ -95,7 +95,7 @@ struct
         val tylist = shortLookup (tyname, pos) ttable "type"
 
         fun iter (t::ts) (e::es) pos =
-            if (checkType t) = (shortCheckExp e)
+            if (stripType t) = (shortCheckExp e)
               then iter ts es pos
             else 
               raise Error("Tuple type mismatch", pos)
@@ -127,24 +127,21 @@ struct
     | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
         shortCheckExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos))
 
-    | Cat.Apply (f,e1,pos) =>
-       (case lookup f ftable of
-	  SOME (t1,t2) =>
-	    if t1 = (checkExp e1 vtable ftable ttable)
-            then t2
-            else raise Error ("Argument does not match declaration of "^f,pos)
-        | _ => raise Error ("Unknown function "^f,pos))
-    | Cat.Read  _ => Int
+    | Cat.Apply (name, e, xy) =>
+       (case lookup name ftable of SOME (atype, rtype) =>
+	          if atype = (shortCheckExp e) then rtype
+            else raise Error (
+            "Argument does not match declaration of " ^ name, xy)
+        | _ => raise Error ("Unknown function " ^ name, xy))
     | Cat.Write (e, xy) =>
        (case (shortCheckExp e) of Int => Int
         | _ => raise Error ("Non-int argument to write", xy))
-    | _ => raise Error("Expression fail", (1,1))
     end
   and checkMatches [(p,e)] tce vtable ftable ttable pos =
         let
           val vtable1 = checkPat [p] [tce] ttable pos vtable
         in
-	  checkExp e (vtable1 @ vtable) ftable ttable
+	        checkExp e (vtable1 @ vtable) ftable ttable
         end
     | checkMatches ((p,e)::ms) tce vtable ftable ttable pos =
         let
@@ -156,39 +153,60 @@ struct
 	  else raise Error ("Match branches have different type",pos)
         end
     | checkMatches [] tce vtable ftable ttable pos =
-        raise Error ("Empty match",pos)
+        raise Error ("Empty match", pos)
 
-  fun getTyDecs [] ftable = ftable
-    | getTyDecs ((ty, tylist, pos)::fs) ftable =
-        if List.exists (fn (g,_)=>ty=g) ftable
-	      then raise 
-          Error ("Duplicate declaration of type "^ty,pos)
-        else getTyDecs fs ((ty, tylist) :: ftable)
+  (**
+  * Auxiliary function for duplicates checking in a table. 
+  **)
+  fun checkForDuplicate key haystack strType xy func =
+      (case (List.find (fn (x, _, _)=> x = key) haystack) of
+           SOME (_, _, (x, y)) => raise Error (
+              "The " ^ strType ^ " " ^ key ^ " is already declared at line " ^
+              Int.toString(x) ^ " column " ^ Int.toString(y) ^
+              ". Attempted duplicate declaration", xy)
+         | NONE => func
+        )
 
+  (**
+  * Puts the type declarations into ttable. 
+  * Raises an error if some type is declared more than once.
+  **)
+  fun getTyDecs [] ttable = ttable
+    | getTyDecs ((name, tylist, xy) :: tydecs) ttable =
+        checkForDuplicate name ttable "type" xy
+        (getTyDecs tydecs ((name, tylist, xy) :: ttable))
+        
+  (**
+  * Puts the function declarations into ftable. 
+  * Raises an error if some function is declared more than once.
+  **)
+  fun getFunDecs [] ftable = ftable
+    | getFunDecs ((name, atype, rtype, _, xy) :: fundecs) ftable =
+        checkForDuplicate name ftable "function" xy
+        (getFunDecs fundecs 
+          ((name, (stripType atype, stripType rtype), xy) :: ftable))
 
-  fun getFunDecs [] ttable ftable = ftable
-    | getFunDecs ((f, targ, tresult, m, pos)::fs) ttable ftable =
-        if List.exists (fn (g,_)=>f=g) ftable
-	then raise Error ("Duplicate declaration of function "^f,pos)
-        else getFunDecs fs ttable
-			((f, (checkType targ, checkType tresult))
-			 :: ftable)
-
-  fun checkFunDec ftable ttable (f, targ, tresult, m, pos) =
+  (**
+  * Type-checks the declared functions. Both ftable and ttable
+  * must be gathered beforehand. 
+  **)
+  fun checkFunDec ftable ttable (_, atype, rtype, matches, xy) =
     let
-      val argtype = checkType targ
-      val resulttype = checkType tresult 
-      val bodytype = checkMatches m argtype [] ftable ttable pos
+      val atype = stripType atype
+      val rtype = stripType rtype 
+      val btype = checkMatches matches atype [] ftable ttable xy
     in
-      if resulttype = bodytype
-      then resulttype
-      else raise Error ("Body type doesn't match declaration",pos)
+      if rtype = btype then rtype
+      else raise Error ("Body type doesn't match declaration", xy)
     end
 
+  (**
+  * Type-checks the entire program text. 
+  **)
   fun checkProgram (tyDecs, funDecs, e) =
     let
       val ttable = getTyDecs tyDecs []
-      val ftable = getFunDecs funDecs ttable []
+      val ftable = getFunDecs funDecs []
       val _ = List.map (checkFunDec ftable ttable) funDecs
     in
       (checkExp e [] ftable ttable; ())
