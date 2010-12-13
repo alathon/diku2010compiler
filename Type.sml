@@ -26,16 +26,16 @@ struct
     | Cat.TyVar (name, _) => TyVar(name)
 
   (* Check pattern and return vtable *)
-  fun checkPat [] [] _ _ vtable = vtable
-    | checkPat [] _ _ pos _ = raise Error ("Pattern too short for tuple", pos)
-    | checkPat _ [] _ pos _ = raise Error ("Tuple too short for pattern", pos)
-    | checkPat (pat::pats) (ty::tys) ttable pos vtable =
-    let val rest = checkPat pats tys ttable pos vtable in
+  fun checkPat [] [] _ vtable _  = vtable
+    | checkPat [] _ _ _ pos = raise Error ("Pattern too short for tuple", pos)
+    | checkPat _ [] _ _ pos = raise Error ("Tuple too short for pattern", pos)
+    | checkPat (pat::pats) (ty::tys) ttable vtable pos =
+    let val rest = checkPat pats tys ttable vtable pos in
     (case (pat,ty) of
-      (Cat.NumP _, Int) => rest
-    | (Cat.TrueP _, Bool) => rest
-    | (Cat.FalseP _, Bool) => rest
-    | (Cat.NullP _, Null) => rest
+      (Cat.NumP _, Int)     => rest
+    | (Cat.TrueP _, Bool)   => rest
+    | (Cat.FalseP _, Bool)  => rest
+    | (Cat.NullP _, Null)   => rest
     | (Cat.VarP (name,p), tyvar) => 
         let
           val x = 
@@ -44,7 +44,7 @@ struct
              | NONE => ())
           val value = (name, tyvar, p)
          in
-           (x; (value :: (checkPat pats tys ttable pos (value :: vtable))))
+           (x; (value :: (checkPat pats tys ttable (value :: vtable) pos)))
          end
     | (Cat.TupleP (plist, p), TyVar(name))  =>
         let val tupletys = 
@@ -52,7 +52,7 @@ struct
              SOME x => List.map stripType x
            | NONE => raise Error ("Undefined type "^name, p))
         in
-          (checkPat plist tupletys ttable pos vtable) @ rest
+          (checkPat plist tupletys ttable vtable pos) @ rest
         end
     | _ => raise Error ("Pattern doesn't match type", pos)
     )
@@ -103,11 +103,9 @@ struct
               raise Error("Too many expressions for tuple", pos)
           | iter (t::ts) [] pos =
               raise Error("Too few expressions for tuple", pos)
-          | iter [] [] pos = ()
-
-        val _ = iter tylist explist pos 
+          | iter [] [] pos = () 
      in
-         TyVar(tyname)
+         (iter tylist explist pos;TyVar(tyname))
       end
 
     | Cat.If (e1,e2,e3,pos) =>
@@ -120,6 +118,7 @@ struct
         else if v1 <> Bool then raise Error ("Non-boolean expression", pos)
         else v2
       end
+
     | Cat.Case (exp, matches, pos) => 
         checkMatches matches (shortCheckExp exp) vtable ftable ttable pos
     
@@ -133,27 +132,25 @@ struct
             else raise Error (
             "Argument does not match declaration of " ^ name, xy)
         | _ => raise Error ("Unknown function " ^ name, xy))
+ 
     | Cat.Write (e, xy) =>
        (case (shortCheckExp e) of Int => Int
         | _ => raise Error ("Non-int argument to write", xy))
     end
   and checkMatches [(p,e)] tce vtable ftable ttable pos =
-        let
-          val vtable1 = checkPat [p] [tce] ttable pos vtable
-        in
-	        checkExp e (vtable1 @ vtable) ftable ttable
-        end
+        let val vtable1 = checkPat [p] [tce] ttable vtable pos
+        in checkExp e (vtable1 @ vtable) ftable ttable end
     | checkMatches ((p,e)::ms) tce vtable ftable ttable pos =
         let
-          val vtable1 = checkPat [p] [tce] ttable pos vtable
+          val vtable1 = checkPat [p] [tce] ttable vtable pos
           val te = checkExp e (vtable1 @ vtable) ftable ttable
           val tm = checkMatches ms tce vtable ftable ttable pos
         in
-	  if te = tm then te
-	  else raise Error ("Match branches have different type",pos)
+	        if te = tm then te
+	        else raise Error ("Match branches have different type", pos)
         end
     | checkMatches [] tce vtable ftable ttable pos =
-        raise Error ("Empty match", pos)
+        raise Error ("Match patterns absent", pos)
 
   (**
   * Auxiliary function for duplicates checking in a table. 
