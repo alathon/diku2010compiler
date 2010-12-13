@@ -1,8 +1,12 @@
-type c = (bool)
-type e = (int,bool)
+type c = (int,int)
+type d = (int,int,int)
 
-fun a: int -> c
-  x => (5):c
+fun g : c -> int
+(5,5) => let x = 5; y = 3 in x+x
 end
 
-a 5
+fun f: int -> c
+  x => (x,x):c
+end
+
+write g f 5

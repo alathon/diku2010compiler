@@ -19,14 +19,11 @@
 %left SEMICOLON COMMA
 %right BAR
 %right MATCHARROW
-%right LPAR RPAR
-%left PLUS MINUS
-%nonassoc LT EQUALS
-%right ELSE IN
-%right OR
-%right AND
+%nonassoc ELSE IN
+%right OR AND
 %nonassoc NOT
-%right WRITE
+%nonassoc LT EQUALS
+%left PLUS MINUS
 
 %start Prog
 %type <Cat.Prog> Prog
@@ -111,7 +108,7 @@ Exp :	  NUM		{ Cat.Num $1 }
 ;
 
 Exps :  Exp { [$1] }
-      | Exps SEMICOLON Exps { $1 @ $3 }
+      | Exps COMMA Exps { $1 @ $3 }
 ;
 
 Dec  :  Pat EQUALS Exp { [($1, $3, $2)] }

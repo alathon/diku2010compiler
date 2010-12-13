@@ -3,32 +3,29 @@
 main:
 	la	$28, _heap_
 	ori	$2, $0, 5
-# was:	ori	_apply__9_, 0, 5
-# 	ori	2,_apply__9_,0
-	jal	a
-# was:	jal	a, 2
+# was:	ori	_apply__7_, 0, 5
+# 	ori	2,_apply__7_,0
+	jal	f
+# was:	jal	f, 2
 # 	ori	dead,2,0
 	j	_stop_
 # 
-a:
+f:
 	sw	$31, -4($29)
 	addi	$29, $29, -8
-# 	ori	a_arg__1_,2,0
-# 	ori	_patVar_n__6_,a_arg__1_,0
-# 	ori	_plus1__7_,_patVar_n__6_,0
-	ori	$3, $0, 5
-# was:	ori	_plus2__8_, 0, 5
-	add	$2, $2, $3
-# was:	add	a_res__2_, _plus1__7_, _plus2__8_
-	j	a_return__3_
+# 	ori	f_arg__1_,2,0
+# 	ori	_patVar_x__6_,f_arg__1_,0
+	ori	$2, $0, 4
+# was:	ori	f_res__2_, 0, 4
+	j	f_return__3_
 _match__5_:
-	j	a_fail__4_
-a_return__3_:
-# 	ori	2,a_res__2_,0
+	j	f_fail__4_
+f_return__3_:
+# 	ori	2,f_res__2_,0
 	addi	$29, $29, 8
 	lw	$31, -4($29)
 	jr	$31
-a_fail__4_:
+f_fail__4_:
 	ori	$5, $0, 3
 	j	_Error_
 _stop_:

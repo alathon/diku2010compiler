@@ -50,7 +50,7 @@
   40      | LPAR Exp RPAR
 
   41  Exps : Exp
-  42       | Exps SEMICOLON Exps
+  42       | Exps COMMA Exps
 
   43  Dec : Pat EQUALS Exp
   44      | Dec SEMICOLON Dec
@@ -221,6 +221,7 @@ state 13
 	WRITE  shift 22
 	AND  reduce 25
 	BAR  reduce 25
+	COMMA  reduce 25
 	ELSE  reduce 25
 	END  reduce 25
 	EOF  reduce 25
@@ -421,6 +422,12 @@ state 26
 	.  error
 
 
+27: shift/reduce conflict (shift 42, reduce 37) on AND
+27: shift/reduce conflict (shift 44, reduce 37) on EQUALS
+27: shift/reduce conflict (shift 45, reduce 37) on LT
+27: shift/reduce conflict (shift 46, reduce 37) on MINUS
+27: shift/reduce conflict (shift 47, reduce 37) on OR
+27: shift/reduce conflict (shift 48, reduce 37) on PLUS
 state 27
 	Exp : Exp . PLUS Exp  (27)
 	Exp : Exp . MINUS Exp  (28)
@@ -430,18 +437,19 @@ state 27
 	Exp : Exp . OR Exp  (33)
 	Exp : ID Exp .  (37)
 
-	AND  reduce 37
+	AND  shift 42
+	EQUALS  shift 44
+	LT  shift 45
+	MINUS  shift 46
+	OR  shift 47
+	PLUS  shift 48
 	BAR  reduce 37
+	COMMA  reduce 37
 	ELSE  reduce 37
 	END  reduce 37
 	EOF  reduce 37
-	EQUALS  reduce 37
 	IN  reduce 37
-	LT  reduce 37
-	MINUS  reduce 37
 	OF  reduce 37
-	OR  reduce 37
-	PLUS  reduce 37
 	RPAR  reduce 37
 	SEMICOLON  reduce 37
 	THEN  reduce 37
@@ -545,15 +553,15 @@ state 37
 	OR  shift 47
 	PLUS  shift 48
 	RPAR  shift 62
-	SEMICOLON  reduce 41
+	COMMA  reduce 41
 
 
 state 38
 	Exp : LPAR Exps . RPAR COLON ID  (26)
-	Exps : Exps . SEMICOLON Exps  (42)
+	Exps : Exps . COMMA Exps  (42)
 
-	RPAR  shift 63
-	SEMICOLON  shift 64
+	COMMA  shift 63
+	RPAR  shift 64
 	.  error
 
 
@@ -566,18 +574,19 @@ state 39
 	Exp : Exp . AND Exp  (32)
 	Exp : Exp . OR Exp  (33)
 
+	EQUALS  shift 44
+	LT  shift 45
+	MINUS  shift 46
+	PLUS  shift 48
 	AND  reduce 31
 	BAR  reduce 31
+	COMMA  reduce 31
 	ELSE  reduce 31
 	END  reduce 31
 	EOF  reduce 31
-	EQUALS  reduce 31
 	IN  reduce 31
-	LT  reduce 31
-	MINUS  reduce 31
 	OF  reduce 31
 	OR  reduce 31
-	PLUS  reduce 31
 	RPAR  reduce 31
 	SEMICOLON  reduce 31
 	THEN  reduce 31
@@ -590,6 +599,12 @@ state 40
 	.  error
 
 
+41: shift/reduce conflict (shift 42, reduce 39) on AND
+41: shift/reduce conflict (shift 44, reduce 39) on EQUALS
+41: shift/reduce conflict (shift 45, reduce 39) on LT
+41: shift/reduce conflict (shift 46, reduce 39) on MINUS
+41: shift/reduce conflict (shift 47, reduce 39) on OR
+41: shift/reduce conflict (shift 48, reduce 39) on PLUS
 state 41
 	Exp : Exp . PLUS Exp  (27)
 	Exp : Exp . MINUS Exp  (28)
@@ -599,18 +614,19 @@ state 41
 	Exp : Exp . OR Exp  (33)
 	Exp : WRITE Exp .  (39)
 
-	AND  reduce 39
+	AND  shift 42
+	EQUALS  shift 44
+	LT  shift 45
+	MINUS  shift 46
+	OR  shift 47
+	PLUS  shift 48
 	BAR  reduce 39
+	COMMA  reduce 39
 	ELSE  reduce 39
 	END  reduce 39
 	EOF  reduce 39
-	EQUALS  reduce 39
 	IN  reduce 39
-	LT  reduce 39
-	MINUS  reduce 39
 	OF  reduce 39
-	OR  reduce 39
-	PLUS  reduce 39
 	RPAR  reduce 39
 	SEMICOLON  reduce 39
 	THEN  reduce 39
@@ -894,14 +910,7 @@ state 62
 
 
 state 63
-	Exp : LPAR Exps RPAR . COLON ID  (26)
-
-	COLON  shift 83
-	.  error
-
-
-state 64
-	Exps : Exps SEMICOLON . Exps  (42)
+	Exps : Exps COMMA . Exps  (42)
 
 	CASE  shift 11
 	FALSE  shift 12
@@ -917,8 +926,15 @@ state 64
 	WRITE  shift 22
 	.  error
 
-	Exp  goto 84
-	Exps  goto 85
+	Exp  goto 83
+	Exps  goto 84
+
+
+state 64
+	Exp : LPAR Exps RPAR . COLON ID  (26)
+
+	COLON  shift 85
+	.  error
 
 
 state 65
@@ -937,17 +953,18 @@ state 66
 	Exp : Exp . OR Exp  (33)
 
 	AND  shift 42
+	EQUALS  shift 44
+	LT  shift 45
+	MINUS  shift 46
+	OR  shift 47
+	PLUS  shift 48
 	BAR  reduce 32
+	COMMA  reduce 32
 	ELSE  reduce 32
 	END  reduce 32
 	EOF  reduce 32
-	EQUALS  reduce 32
 	IN  reduce 32
-	LT  reduce 32
-	MINUS  reduce 32
 	OF  reduce 32
-	OR  reduce 32
-	PLUS  reduce 32
 	RPAR  reduce 32
 	SEMICOLON  reduce 32
 	THEN  reduce 32
@@ -962,16 +979,17 @@ state 67
 	Exp : Exp . AND Exp  (32)
 	Exp : Exp . OR Exp  (33)
 
-	AND  shift 42
-	OR  shift 47
+	MINUS  shift 46
+	PLUS  shift 48
+	AND  reduce 29
 	BAR  reduce 29
+	COMMA  reduce 29
 	ELSE  reduce 29
 	END  reduce 29
 	EOF  reduce 29
 	IN  reduce 29
-	MINUS  reduce 29
 	OF  reduce 29
-	PLUS  reduce 29
+	OR  reduce 29
 	RPAR  reduce 29
 	SEMICOLON  reduce 29
 	THEN  reduce 29
@@ -986,16 +1004,17 @@ state 68
 	Exp : Exp . AND Exp  (32)
 	Exp : Exp . OR Exp  (33)
 
-	AND  shift 42
-	OR  shift 47
+	MINUS  shift 46
+	PLUS  shift 48
+	AND  reduce 30
 	BAR  reduce 30
+	COMMA  reduce 30
 	ELSE  reduce 30
 	END  reduce 30
 	EOF  reduce 30
 	IN  reduce 30
-	MINUS  reduce 30
 	OF  reduce 30
-	PLUS  reduce 30
+	OR  reduce 30
 	RPAR  reduce 30
 	SEMICOLON  reduce 30
 	THEN  reduce 30
@@ -1010,17 +1029,18 @@ state 69
 	Exp : Exp . AND Exp  (32)
 	Exp : Exp . OR Exp  (33)
 
-	AND  shift 42
-	EQUALS  shift 44
-	LT  shift 45
-	OR  shift 47
+	AND  reduce 28
 	BAR  reduce 28
+	COMMA  reduce 28
 	ELSE  reduce 28
 	END  reduce 28
 	EOF  reduce 28
+	EQUALS  reduce 28
 	IN  reduce 28
+	LT  reduce 28
 	MINUS  reduce 28
 	OF  reduce 28
+	OR  reduce 28
 	PLUS  reduce 28
 	RPAR  reduce 28
 	SEMICOLON  reduce 28
@@ -1037,17 +1057,18 @@ state 70
 	Exp : Exp OR Exp .  (33)
 
 	AND  shift 42
+	EQUALS  shift 44
+	LT  shift 45
+	MINUS  shift 46
 	OR  shift 47
+	PLUS  shift 48
 	BAR  reduce 33
+	COMMA  reduce 33
 	ELSE  reduce 33
 	END  reduce 33
 	EOF  reduce 33
-	EQUALS  reduce 33
 	IN  reduce 33
-	LT  reduce 33
-	MINUS  reduce 33
 	OF  reduce 33
-	PLUS  reduce 33
 	RPAR  reduce 33
 	SEMICOLON  reduce 33
 	THEN  reduce 33
@@ -1062,17 +1083,18 @@ state 71
 	Exp : Exp . AND Exp  (32)
 	Exp : Exp . OR Exp  (33)
 
-	AND  shift 42
-	EQUALS  shift 44
-	LT  shift 45
-	OR  shift 47
+	AND  reduce 27
 	BAR  reduce 27
+	COMMA  reduce 27
 	ELSE  reduce 27
 	END  reduce 27
 	EOF  reduce 27
+	EQUALS  reduce 27
 	IN  reduce 27
+	LT  reduce 27
 	MINUS  reduce 27
 	OF  reduce 27
+	OR  reduce 27
 	PLUS  reduce 27
 	RPAR  reduce 27
 	SEMICOLON  reduce 27
@@ -1190,17 +1212,18 @@ state 80
 	Exp : LET Dec IN Exp .  (34)
 
 	AND  shift 42
+	EQUALS  shift 44
+	LT  shift 45
+	MINUS  shift 46
 	OR  shift 47
+	PLUS  shift 48
 	BAR  reduce 34
+	COMMA  reduce 34
 	ELSE  reduce 34
 	END  reduce 34
 	EOF  reduce 34
-	EQUALS  reduce 34
 	IN  reduce 34
-	LT  reduce 34
-	MINUS  reduce 34
 	OF  reduce 34
-	PLUS  reduce 34
 	RPAR  reduce 34
 	SEMICOLON  reduce 34
 	THEN  reduce 34
@@ -1234,13 +1257,6 @@ state 82
 
 
 state 83
-	Exp : LPAR Exps RPAR COLON . ID  (26)
-
-	ID  shift 94
-	.  error
-
-
-state 84
 	Exp : Exp . PLUS Exp  (27)
 	Exp : Exp . MINUS Exp  (28)
 	Exp : Exp . EQUALS Exp  (29)
@@ -1255,16 +1271,23 @@ state 84
 	MINUS  shift 46
 	OR  shift 47
 	PLUS  shift 48
+	COMMA  reduce 41
 	RPAR  reduce 41
-	SEMICOLON  reduce 41
+
+
+state 84
+	Exps : Exps . COMMA Exps  (42)
+	Exps : Exps COMMA Exps .  (42)
+
+	COMMA  reduce 42
+	RPAR  reduce 42
 
 
 state 85
-	Exps : Exps . SEMICOLON Exps  (42)
-	Exps : Exps SEMICOLON Exps .  (42)
+	Exp : LPAR Exps RPAR COLON . ID  (26)
 
-	RPAR  reduce 42
-	SEMICOLON  reduce 42
+	ID  shift 94
+	.  error
 
 
 state 86
@@ -1417,17 +1440,18 @@ state 98
 	Exp : IF Exp THEN Exp ELSE Exp .  (35)
 
 	AND  shift 42
+	EQUALS  shift 44
+	LT  shift 45
+	MINUS  shift 46
 	OR  shift 47
+	PLUS  shift 48
 	BAR  reduce 35
+	COMMA  reduce 35
 	ELSE  reduce 35
 	END  reduce 35
 	EOF  reduce 35
-	EQUALS  reduce 35
 	IN  reduce 35
-	LT  reduce 35
-	MINUS  reduce 35
 	OF  reduce 35
-	PLUS  reduce 35
 	RPAR  reduce 35
 	SEMICOLON  reduce 35
 	THEN  reduce 35
@@ -1460,7 +1484,9 @@ state 100
 	.  reduce 4
 
 
+State 27 contains 6 shift/reduce conflicts.
 State 37 contains 1 shift/reduce conflict.
+State 41 contains 6 shift/reduce conflicts.
 
 
 39 terminals, 13 nonterminals
