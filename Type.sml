@@ -121,11 +121,11 @@ struct
         else v2
       end
     | Cat.Case (exp, matches, pos) => 
-        checkMatch matches (shortCheckExp exp) vtable ftable ttable pos
+        checkMatches matches (shortCheckExp exp) vtable ftable ttable pos
     
     | Cat.Let ([], e, _) => shortCheckExp e
-    | Cat.Let (((de, dp, dpos) :: decs), exp, pos) =>
-        shortCheckExp (Cat.Case (de, [(dp, Cat.Let(ds, exp, pos))], dpos))
+    | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
+        shortCheckExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos))
 
     | Cat.Apply (f,e1,pos) =>
        (case lookup f ftable of
@@ -140,22 +140,22 @@ struct
         | _ => raise Error ("Non-int argument to write", xy))
     | _ => raise Error("Expression fail", (1,1))
     end
-  and checkMatch [(p,e)] tce vtable ftable ttable pos =
+  and checkMatches [(p,e)] tce vtable ftable ttable pos =
         let
           val vtable1 = checkPat [p] [tce] ttable pos vtable
         in
 	  checkExp e (vtable1 @ vtable) ftable ttable
         end
-    | checkMatch ((p,e)::ms) tce vtable ftable ttable pos =
+    | checkMatches ((p,e)::ms) tce vtable ftable ttable pos =
         let
           val vtable1 = checkPat [p] [tce] ttable pos vtable
           val te = checkExp e (vtable1 @ vtable) ftable ttable
-          val tm = checkMatch ms tce vtable ftable ttable pos
+          val tm = checkMatches ms tce vtable ftable ttable pos
         in
 	  if te = tm then te
 	  else raise Error ("Match branches have different type",pos)
         end
-    | checkMatch [] tce vtable ftable ttable pos =
+    | checkMatches [] tce vtable ftable ttable pos =
         raise Error ("Empty match",pos)
 
   fun getTyDecs [] ftable = ftable
@@ -178,7 +178,7 @@ struct
     let
       val argtype = checkType targ
       val resulttype = checkType tresult 
-      val bodytype = checkMatch m argtype [] ftable ttable pos
+      val bodytype = checkMatches m argtype [] ftable ttable pos
     in
       if resulttype = bodytype
       then resulttype
