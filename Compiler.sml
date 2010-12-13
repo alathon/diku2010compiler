@@ -97,7 +97,6 @@ struct
     | Cat.Not (e, _)  => 
         let
           val re    = "_re_"      ^ newName ()
-          val ltrue = "_ltrue_"   ^ newName ()
           val lend  = "_lend_"    ^ newName ()
           val ce    = compileExp e vtable re
         in
@@ -113,14 +112,13 @@ struct
           val rs    = "_rs_"      ^ newName ()
           val rt    = "_rt_"      ^ newName ()
           val rd    = "_rd_"      ^ newName ()
-          val ltrue = "_ltrue_"   ^ newName ()
           val lend  = "_lend_"    ^ newName ()
           val cs   = compileExp e1 vtable rs
           val ct   = compileExp e2 vtable rt
         in
           cs @ ct @
           [
-           Mips.SLT (rd, rs, rt),
+           Mips.SLT (rd, rs, rt), (*TODO: make unsigned. *)
            Mips.BEQ (rd, "0", lend),
            mtrue,
            Mips.LABEL lend
@@ -146,6 +144,32 @@ struct
            mtrue,
            Mips.LABEL lend
           ]
+        end
+    | Cat.And (e1, e2, _) =>
+        let
+          val rs = "_rs"  ^ newName ()
+          val rt = "_rt"  ^ newName ()
+          val cs = compileExp e1 vtable rs
+          val ct = compileExp e2 vtable rt
+          val lend  = "_lend_"    ^ newName ()
+        in
+          cs @ [Mips.BNE (rs, "0", lend)] @
+          ct @ [Mips.BNE (rt, "0", lend)] @
+          [
+           mfalse,
+           Mips.LABEL lend
+          ]
+        end
+    | Cat.Or (e1, e2, _) =>
+        let
+          val rs = "_rs"  ^ newName ()
+          val rt = "_rt"  ^ newName ()
+          val cs = compileExp e1 vtable place
+          val ct = compileExp e2 vtable place
+          val lend  = "_lend_"    ^ newName ()
+        in
+          cs @ [Mips.BNE (place, "0", lend)] @ ct @ 
+          [Mips.LABEL lend]
         end
     | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
     | Cat.Plus (e1,e2,pos) =>

@@ -2,21 +2,17 @@
 	.globl	main
 main:
 	la	$28, _heap_
-	ori	$3, $0, 5
-# was:	ori	_rs__10_, 0, 5
-	ori	$2, $0, 5
-# was:	ori	_rt__11_, 0, 5
-	xor	$2, $3, $2
-# was:	xor	_apply__9_, _rs__10_, _rt__11_
-	beq	$2, $0, _ltrue__13_
-# was:	beq	_apply__9_, 0, _ltrue__13_
+	ori	$3, $0, 0
+# was:	ori	_rs_10_, 0, 0
+	bne	$3, $0, _lend__12_
+# was:	bne	_rs_10_, 0, _lend__12_
+	ori	$3, $0, 0
+# was:	ori	_rt_11_, 0, 0
+	bne	$3, $0, _lend__12_
+# was:	bne	_rt_11_, 0, _lend__12_
 	ori	$2, $0, 0
 # was:	ori	_apply__9_, 0, 0
-	j	_lend__14_
-_ltrue__13_:
-	ori	$2, $0, -1
-# was:	ori	_apply__9_, 0, -1
-_lend__14_:
+_lend__12_:
 # 	ori	2,_apply__9_,0
 	jal	g
 # was:	jal	g, 2

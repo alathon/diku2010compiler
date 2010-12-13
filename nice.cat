@@ -3,4 +3,4 @@ fun g : bool -> int
 |	false => 0
 end
 
-write g 5 = 5
+write g false and false
