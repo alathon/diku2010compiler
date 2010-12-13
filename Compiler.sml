@@ -147,28 +147,31 @@ struct
         end
     | Cat.And (e1, e2, _) =>
         let
-          val rs = "_rs"  ^ newName ()
-          val rt = "_rt"  ^ newName ()
-          val cs = compileExp e1 vtable rs
-          val ct = compileExp e2 vtable rt
-          val lend  = "_lend_"    ^ newName ()
+          val cs = compileExp e1 vtable place
+          val ct = compileExp e2 vtable place
+          val lend  = "_lend"    ^ newName ()
         in
-          cs @ [Mips.BNE (rs, "0", lend)] @
-          ct @ [Mips.BNE (rt, "0", lend)] @
-          [
-           mfalse,
-           Mips.LABEL lend
-          ]
+          cs @ [Mips.BEQ (place, "0", lend)] @ ct @ [Mips.LABEL lend]
         end
     | Cat.Or (e1, e2, _) =>
         let
-          val rs = "_rs"  ^ newName ()
-          val rt = "_rt"  ^ newName ()
           val cs = compileExp e1 vtable place
           val ct = compileExp e2 vtable place
-          val lend  = "_lend_"    ^ newName ()
+          val lend  = "_lend"    ^ newName ()
         in
-          cs @ [Mips.BNE (place, "0", lend)] @ ct @ 
+          cs @ [Mips.BNE (place, "0", lend)] @ ct @ [Mips.LABEL lend]
+        end
+    | Cat.If (e1, e2, e3, _) => 
+        let
+          val r1 = "_r1" ^ newName ()
+          val c1 = compileExp e1 vtable r1
+          val c2 = compileExp e2 vtable place
+          val c3 = compileExp e3 vtable place
+          val lelse  = "_lelse"    ^ newName ()
+          val lend  = "_lend"    ^ newName ()
+        in
+          c1 @ [Mips.BEQ (r1, "0", lelse)] @ c2 @
+          [Mips.J lend, Mips.LABEL lelse] @ c3 @
           [Mips.LABEL lend]
         end
     | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
