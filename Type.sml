@@ -25,7 +25,12 @@ struct
     | Cat.Bool _ => Bool
     | Cat.TyVar (name, _) => TyVar(name)
 
-  (* Check pattern and return vtable *)
+  (** 
+  * Check pattern and return vtable.
+  * Recursive calls are only made in case of tuples,
+  * empty Pat lists and Type lists are not permissible
+  * by the grammar.
+  **)
   fun checkPat [] [] _ vtable _  = vtable
     | checkPat [] _ _ _ pos = raise Error ("Pattern too short for tuple", pos)
     | checkPat _ [] _ _ pos = raise Error ("Tuple too short for pattern", pos)
@@ -60,41 +65,41 @@ struct
 
   (* Type-checks an expression, returns it's type. *)
   fun checkExp exp vtable ftable ttable =
-  let 
-    fun shortCheckExp e = checkExp e vtable ftable ttable 
-    fun binIntOperator (e1, e2, xy) strOperator rtype = 
-      (case (shortCheckExp e1, shortCheckExp e2) of (Int,Int) => rtype
-       | _ => raise Error ("Non-int argument for " ^ strOperator, xy))
-    fun shortLookup (name, xy) table strType =
-      (case lookup name table of SOME value => value
-       | _ => raise Error ("Unbound " ^ strType ^ ":" ^ name, xy))
-  in
-    case (exp) of
-      Cat.Num   _ => Int
-    | Cat.Read  _ => Int
+    let 
+      fun shortCheckExp e = checkExp e vtable ftable ttable 
+      fun binIntOperator (e1, e2, xy) strOperator rtype = 
+        (case (shortCheckExp e1, shortCheckExp e2) of (Int,Int) => rtype
+         | _ => raise Error ("Non-int argument for " ^ strOperator, xy))
+      fun shortLookup (name, xy) table strType =
+        (case lookup name table of SOME value => value
+         | _ => raise Error ("Unbound " ^ strType ^ ":" ^ name, xy))
+    in
+      case (exp) of
+        Cat.Num   _ => Int
+      | Cat.Read  _ => Int
     
-    | Cat.True  _ => Bool
-    | Cat.False _ => Bool
-    | Cat.Not   _ => Bool
-    | Cat.And   _ => Bool
-    | Cat.Or    _ => Bool
+      | Cat.True  _ => Bool
+      | Cat.False _ => Bool
+      | Cat.Not   _ => Bool
+      | Cat.And   _ => Bool
+      | Cat.Or    _ => Bool
     
-    | Cat.Less  x => binIntOperator x "<" Bool
-    | Cat.Equal x => binIntOperator x "=" Bool
-    | Cat.Plus  x => binIntOperator x "+" Int
-    | Cat.Minus x => binIntOperator x "-" Int
+      | Cat.Less  x => binIntOperator x "<" Bool
+      | Cat.Equal x => binIntOperator x "=" Bool
+      | Cat.Plus  x => binIntOperator x "+" Int
+      | Cat.Minus x => binIntOperator x "-" Int
 
-    | Cat.Var   x => shortLookup x vtable "variable" 
+      | Cat.Var   x => shortLookup x vtable "variable" 
     
-    | Cat.Null (name, xy) => 
-        (case (lookup name ttable) of SOME _ => TyVar(name)
-         | _ => raise Error ("Unbound type:" ^ name, xy))
+      | Cat.Null (name, xy) => 
+          (case (lookup name ttable) of SOME _ => TyVar(name)
+           | _ => raise Error ("Unbound type:" ^ name, xy))
 
-    | Cat.MkTuple (explist, tyname, pos) =>
-      let
-        val tylist = shortLookup (tyname, pos) ttable "type"
+      | Cat.MkTuple (explist, tyname, pos) =>
+        let
+          val tylist = shortLookup (tyname, pos) ttable "type"
 
-        fun iter (t::ts) (e::es) pos =
+          fun iter (t::ts) (e::es) pos =
             if (stripType t) = (shortCheckExp e)
               then iter ts es pos
             else 
@@ -104,53 +109,59 @@ struct
           | iter (t::ts) [] pos =
               raise Error("Too few expressions for tuple", pos)
           | iter [] [] pos = () 
-     in
-         (iter tylist explist pos;TyVar(tyname))
-      end
+        in
+          (iter tylist explist pos;TyVar(tyname))
+        end
 
-    | Cat.If (e1,e2,e3,pos) =>
-      let
-        val v1 = shortCheckExp e1
-        val v2 = shortCheckExp e2
-        val v3 = shortCheckExp e3
-      in
-        if v2 <> v3 then raise Error ("Incompatible types", pos)
-        else if v1 <> Bool then raise Error ("Non-boolean expression", pos)
-        else v2
-      end
+      | Cat.If (e1,e2,e3,pos) =>
+        let
+          val v1 = shortCheckExp e1
+          val v2 = shortCheckExp e2
+          val v3 = shortCheckExp e3
+        in
+          if v2 <> v3 then raise Error ("Incompatible types", pos)
+          else if v1 <> Bool then raise Error ("Non-boolean expression", pos)
+          else v2
+        end
 
-    | Cat.Case (exp, matches, pos) => 
-        checkMatches matches (shortCheckExp exp) vtable ftable ttable pos
+      | Cat.Case (exp, matches, pos) => 
+          checkMatches matches (shortCheckExp exp) vtable ftable ttable pos
     
-    | Cat.Let ([], e, _) => shortCheckExp e
-    | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
-        shortCheckExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos))
+      | Cat.Let ([], e, _) => shortCheckExp e
+      | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
+          shortCheckExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos))
 
-    | Cat.Apply (name, e, xy) =>
-       (case lookup name ftable of SOME (atype, rtype) =>
+      | Cat.Apply (name, e, xy) =>
+         (case lookup name ftable of SOME (atype, rtype) =>
 	          if atype = (shortCheckExp e) then rtype
             else raise Error (
             "Argument does not match declaration of " ^ name, xy)
-        | _ => raise Error ("Unknown function " ^ name, xy))
+          | _ => raise Error ("Unknown function " ^ name, xy))
  
-    | Cat.Write (e, xy) =>
-       (case (shortCheckExp e) of Int => Int
-        | _ => raise Error ("Non-int argument to write", xy))
+      | Cat.Write (e, xy) =>
+         (case (shortCheckExp e) of Int => Int
+          | _ => raise Error ("Non-int argument to write", xy))
     end
-  and checkMatches [(p,e)] tce vtable ftable ttable pos =
-        let val vtable1 = checkPat [p] [tce] ttable vtable pos
-        in checkExp e (vtable1 @ vtable) ftable ttable end
-    | checkMatches ((p,e)::ms) tce vtable ftable ttable pos =
+
+  (**
+  * Type-checks a match collection. All patterns must be compatible
+  * with the type of the input argument (tce). Also, all match expressions
+  * must be of the type, it is this type that is returned.
+  **)
+  and checkMatches [(p, e)] atype vtable ftable ttable xy =
+        let val pvtable = checkPat [p] [atype] ttable vtable xy
+        in checkExp e (pvtable @ vtable) ftable ttable end
+    | checkMatches ((p, e) :: matches) atype vtable ftable ttable xy =
         let
-          val vtable1 = checkPat [p] [tce] ttable vtable pos
-          val te = checkExp e (vtable1 @ vtable) ftable ttable
-          val tm = checkMatches ms tce vtable ftable ttable pos
+          val pvtable = checkPat [p] [atype] ttable vtable xy
+          val te = checkExp e (pvtable @ vtable) ftable ttable
+          val tm = checkMatches matches atype vtable ftable ttable xy
         in
 	        if te = tm then te
-	        else raise Error ("Match branches have different type", pos)
+	        else raise Error ("Match branches have different type", xy)
         end
-    | checkMatches [] tce vtable ftable ttable pos =
-        raise Error ("Match patterns absent", pos)
+    | checkMatches [] _ _ _ _ xy =
+        raise Error ("Match patterns absent", xy)
 
   (**
   * Auxiliary function for duplicates checking in a table. 
