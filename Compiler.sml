@@ -42,7 +42,7 @@ struct
         let
 	  val t = "_constPat_"^newName()
         in
-          if n<32768 then
+          if n < 32768 then
 	    ([Mips.LI (t, makeConst n),
 	      Mips.BNE (v,t,fail)],
 	     vtable)
@@ -80,15 +80,73 @@ struct
 
   (* compile expression *)
   fun compileExp e vtable place =
+  let
+    val mtrue = Mips.ORI (place, "0", makeConst ~1)
+    val mfalse = Mips.ORI (place, "0", makeConst 0)
+  in
     case e of
-      Cat.Num (n,pos) =>
-        if n<32768 then
-	  [Mips.LI (place, makeConst n)]
-	else
-	  [Mips.LUI (place, makeConst (n div 65536)),
-	   Mips.ORI (place, place, makeConst (n mod 65536))]
-    | Cat.True (n,pos) => [Mips.LI (place, makeConst ~1)]
-    | Cat.False (n,pos) => [Mips.LI (place, makeConst 0)]
+      Cat.Num (n, _) =>
+        if n < 32768 then [Mips.LI (place, makeConst n)]
+	      else
+	        [
+           Mips.LUI (place, makeConst (n div 65536)),
+	         Mips.ORI (place, place, makeConst (n mod 65536))
+          ]
+    | Cat.True  _ => [mtrue]
+    | Cat.False _ => [mfalse]
+    | Cat.Not (e, _)  => 
+        let
+          val re    = "_re_"      ^ newName ()
+          val ltrue = "_ltrue_"   ^ newName ()
+          val lend  = "_lend_"    ^ newName ()
+          val ce    = compileExp e vtable re
+        in
+          ce @ 
+          [
+           Mips.BEQ (re, "0", lend),
+           mtrue,
+           Mips.LABEL lend
+          ]
+        end
+    | Cat.Less (e1, e2, _) =>
+        let
+          val rs    = "_rs_"      ^ newName ()
+          val rt    = "_rt_"      ^ newName ()
+          val rd    = "_rd_"      ^ newName ()
+          val ltrue = "_ltrue_"   ^ newName ()
+          val lend  = "_lend_"    ^ newName ()
+          val cs   = compileExp e1 vtable rs
+          val ct   = compileExp e2 vtable rt
+        in
+          cs @ ct @
+          [
+           Mips.SLT (rd, rs, rt),
+           Mips.BEQ (rd, "0", lend),
+           mtrue,
+           Mips.LABEL lend
+          ]
+        end
+    | Cat.Equal (e1, e2, _) =>
+        let
+          val rs    = "_rs_"      ^ newName ()
+          val rt    = "_rt_"      ^ newName ()
+          val rd    = "_rd_"      ^ newName ()
+          val ltrue = "_ltrue_"   ^ newName ()
+          val lend  = "_lend_"    ^ newName ()
+          val cs   = compileExp e1 vtable rs
+          val ct   = compileExp e2 vtable rt
+        in
+          cs @ ct @
+          [
+           Mips.XOR (place, rs, rt),
+           Mips.BEQ (place, "0", ltrue),
+           mfalse,
+           Mips.J lend,
+           Mips.LABEL ltrue,
+           mtrue,
+           Mips.LABEL lend
+          ]
+        end
     | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
     | Cat.Plus (e1,e2,pos) =>
         let
@@ -128,7 +186,7 @@ struct
 	   Mips.LA ("4","_cr_"),
 	   Mips.LI ("2","4"),  (* write_string syscall *)
 	   Mips.SYSCALL]
-
+  end
   and compileMatch [] arg res endLabel failLabel vtable =
         [Mips.J failLabel]
     | compileMatch ((p,e)::m) arg res endLabel failLabel vtable =

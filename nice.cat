@@ -1,16 +1,6 @@
-type c = (int,int)
-type d = (int,int,int)
-
-fun g : c -> int
-(5,5) => let x = 5; y = 3 in x+x
+fun g : bool -> int
+	true => 1
+|	false => 0
 end
 
-fun g : c -> int
-(5,5) => let x = 5; y = 3 in x+x
-end
-
-fun f: int -> c
-  x => (x,x):c
-end
-
-f 5
+write g 5 = 5

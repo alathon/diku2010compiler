@@ -2,31 +2,65 @@
 	.globl	main
 main:
 	la	$28, _heap_
+	ori	$3, $0, 5
+# was:	ori	_rs__10_, 0, 5
 	ori	$2, $0, 5
-# was:	ori	_apply__7_, 0, 5
-# 	ori	2,_apply__7_,0
-	jal	f
-# was:	jal	f, 2
+# was:	ori	_rt__11_, 0, 5
+	xor	$2, $3, $2
+# was:	xor	_apply__9_, _rs__10_, _rt__11_
+	beq	$2, $0, _ltrue__13_
+# was:	beq	_apply__9_, 0, _ltrue__13_
+	ori	$2, $0, 0
+# was:	ori	_apply__9_, 0, 0
+	j	_lend__14_
+_ltrue__13_:
+	ori	$2, $0, -1
+# was:	ori	_apply__9_, 0, -1
+_lend__14_:
+# 	ori	2,_apply__9_,0
+	jal	g
+# was:	jal	g, 2
 # 	ori	dead,2,0
+	ori	$4, $2, 0
+# was:	ori	4, dead, 0
+	ori	$2, $0, 1
+# was:	ori	2, 0, 1
+	syscall
+	la	$4, _cr_
+# was:	la	4, _cr_
+	ori	$2, $0, 4
+# was:	ori	2, 0, 4
+	syscall
 	j	_stop_
 # 
-f:
+g:
 	sw	$31, -4($29)
 	addi	$29, $29, -8
-# 	ori	f_arg__1_,2,0
-# 	ori	_patVar_x__6_,f_arg__1_,0
-	ori	$2, $0, 4
-# was:	ori	f_res__2_, 0, 4
-	j	f_return__3_
+# 	ori	g_arg__1_,2,0
+	ori	$3, $0, -1
+# was:	ori	_truePat__6_, 0, -1
+	bne	$2, $3, _match__5_
+# was:	bne	g_arg__1_, _truePat__6_, _match__5_
+	ori	$2, $0, 1
+# was:	ori	g_res__2_, 0, 1
+	j	g_return__3_
 _match__5_:
-	j	f_fail__4_
-f_return__3_:
-# 	ori	2,f_res__2_,0
+	ori	$3, $0, 0
+# was:	ori	_falsePat__8_, 0, 0
+	bne	$2, $3, _match__7_
+# was:	bne	g_arg__1_, _falsePat__8_, _match__7_
+	ori	$2, $0, 0
+# was:	ori	g_res__2_, 0, 0
+	j	g_return__3_
+_match__7_:
+	j	g_fail__4_
+g_return__3_:
+# 	ori	2,g_res__2_,0
 	addi	$29, $29, 8
 	lw	$31, -4($29)
 	jr	$31
-f_fail__4_:
-	ori	$5, $0, 3
+g_fail__4_:
+	ori	$5, $0, 1
 	j	_Error_
 _stop_:
 	ori	$2, $0, 10
