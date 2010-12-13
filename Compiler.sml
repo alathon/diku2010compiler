@@ -174,6 +174,13 @@ struct
           [Mips.J lend, Mips.LABEL lelse] @ c3 @
           [Mips.LABEL lend]
         end
+    | Cat.Case (e, m, p) =>
+        let
+          val lf = "_case" ^ newName ()
+          val cf = compileFun (lf, Cat.Int (0,0), Cat.Int (0,0), m, p)
+        in
+          cf @ (compileExp (Cat.Apply (lf, e, p)) vtable place)
+        end
     | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
     | Cat.Plus (e1,e2,pos) =>
         let
@@ -194,13 +201,13 @@ struct
 	  code1 @ code2 @ [Mips.SUB (place,t1,t2)]
 	end
     | Cat.Apply (f,e,pos) =>
-	let
-	  val t1 = "_apply_"^newName()
-	  val code1 = compileExp e vtable t1
-	in
-	  code1 @
+	      let
+	        val t1 = "_apply_"^newName()
+	        val code1 = compileExp e vtable t1
+	      in
+	        code1 @
           [Mips.MOVE ("2",t1), Mips.JAL (f,["2"]), Mips.MOVE (place,"2")]
-	end
+	      end
     | Cat.Read pos =>
         [Mips.LI ("2","5"), (* read_int syscall *)
          Mips.SYSCALL,
@@ -227,7 +234,7 @@ struct
 	end
 
   (* code for saving and restoring callee-saves registers *)
-  fun stackSave currentReg maxReg savecode restorecode offset =
+  and stackSave currentReg maxReg savecode restorecode offset =
     if currentReg > maxReg
     then (savecode, restorecode, offset)  (* done *)
     else stackSave (currentReg+1)
