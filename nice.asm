@@ -2,9 +2,19 @@
 	.globl	main
 main:
 	la	$28, _heap_
-	ori	$2, $0, 0
+	ori	$2, $0, 5
+# was:	ori	_re__18_, 0, 5
+	beq	$2, $0, _lend__19_
+# was:	beq	_re__18_, 0, _lend__19_
+	ori	$3, $0, 0
 # was:	ori	_apply__17_, 0, 0
-# 	ori	2,_apply__17_,0
+	j	_lend__19_
+_lelse__20_:
+	ori	$3, $0, -1
+# was:	ori	_apply__17_, 0, -1
+_lend__19_:
+	ori	$2, $3, 0
+# was:	ori	2, _apply__17_, 0
 	jal	g
 # was:	jal	g, 2
 # 	ori	dead,2,0
@@ -65,8 +75,8 @@ _case_7__return__10_:
 	jr	$31
 # was:	jr	31, 
 _case_7__fail__11_:
-	ori	$5, $0, 2
-# was:	ori	5, 0, 2
+	ori	$5, $0, 4
+# was:	ori	5, 0, 4
 	j	_Error_
 	ori	$2, $3, 0
 # was:	ori	_apply__16_, _patVar_x__6_, 0
@@ -83,7 +93,7 @@ g_return__3_:
 	lw	$31, -4($29)
 	jr	$31
 g_fail__4_:
-	ori	$5, $0, 1
+	ori	$5, $0, 3
 	j	_Error_
 _stop_:
 	ori	$2, $0, 10

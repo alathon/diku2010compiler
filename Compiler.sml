@@ -98,11 +98,15 @@ struct
         let
           val re    = "_re_"      ^ newName ()
           val lend  = "_lend_"    ^ newName ()
+          val lelse = "_lelse_"    ^ newName ()
           val ce    = compileExp e vtable re
         in
           ce @ 
           [
            Mips.BEQ (re, "0", lend),
+           mfalse,
+           Mips.J lend,
+           Mips.LABEL lelse,
            mtrue,
            Mips.LABEL lend
           ]
@@ -184,8 +188,15 @@ struct
 
     | Cat.Let ([], e, _) => (compileExp e vtable place)
     | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
-        compileExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos)) vtable
-        place
+        let
+          val rl = "_let" ^ newName ()
+        in
+        compileExp 
+        (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos)) 
+        vtable rl
+        @ [Mips.OR (place, "0", rl)]
+        end
+    (* TODO: Make Let work. *)
 
     | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
     | Cat.Plus (e1,e2,pos) =>

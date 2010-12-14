@@ -1,5 +1,7 @@
+type c = (int, int)
+
 fun g : bool -> int
-	x => let y = 5 in y
+	x => case x of true => 1 | false => 0 end
 end
 
-write g false
+write g 5 or (5,6):c

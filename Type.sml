@@ -73,16 +73,23 @@ struct
       fun shortLookup (name, xy) table strType =
         (case lookup name table of SOME value => value
          | _ => raise Error ("Unbound " ^ strType ^ ":" ^ name, xy))
+      fun tupleError (e, xy) strOperator =
+        (case (shortCheckExp e) of
+           TyVar _ => raise Error (
+           "Operator " ^ strOperator ^ " not compative with tuples", xy)
+         | _ => Bool)
     in
       case (exp) of
         Cat.Num   _ => Int
       | Cat.Read  _ => Int
-    
       | Cat.True  _ => Bool
       | Cat.False _ => Bool
-      | Cat.Not   _ => Bool
-      | Cat.And   _ => Bool
-      | Cat.Or    _ => Bool
+
+      | Cat.Not   x => tupleError x "NOT"
+      | Cat.And   (e1, e2, xy) =>
+          (tupleError (e1, xy) "AND";tupleError (e2, xy) "AND")
+      | Cat.Or    (e1, e2, xy) =>
+          (tupleError (e1, xy) "OR";tupleError (e2, xy) "OR")
     
       | Cat.Less  x => binIntOperator x "<" Bool
       | Cat.Equal x => binIntOperator x "=" Bool

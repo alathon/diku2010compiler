@@ -30,17 +30,17 @@ struct
                    let val (lin,col) = Lexer.getPos lexbuf
                    in
                      errorMess ("Parse-error at line "
-                      ^ makestring lin ^ ", column " ^ makestring col)
+                      ^ makestring lin ^ ", column " ^ makestring col ^ ".")
                    end
                | Lexer.LexicalError (mess,(lin,col)) =>
                      errorMess ("Lexical error: " ^mess^ " at line "
-                      ^ makestring lin ^ ", column " ^ makestring col)
+                      ^ makestring lin ^ ", column " ^ makestring col ^ ".")
 	       | Compiler.Error (mess,(lin,col)) =>
                      errorMess ("Compiler error: " ^mess^ " at line "
-                      ^ makestring lin ^ ", column " ^ makestring col)
+                      ^ makestring lin ^ ", column " ^ makestring col ^ ".")
 	       | Type.Error (mess,(lin,col)) =>
                      errorMess ("Type error: " ^mess^ " at line "
-                      ^ makestring lin ^ ", column " ^ makestring col)
+                      ^ makestring lin ^ ", column " ^ makestring col ^ ".")
                | SysErr (s,_) => errorMess ("Exception: " ^ s)
       end
 
