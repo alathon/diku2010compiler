@@ -2,21 +2,35 @@
 	.globl	main
 main:
 	la	$28, _heap_
-	ori	$2, $0, 5
-# was:	ori	_re__18_, 0, 5
-	beq	$2, $0, _lend__19_
-# was:	beq	_re__18_, 0, _lend__19_
-	ori	$3, $0, 0
-# was:	ori	_apply__17_, 0, 0
-	j	_lend__19_
-_lelse__20_:
-	ori	$3, $0, -1
-# was:	ori	_apply__17_, 0, -1
-_lend__19_:
-	ori	$2, $3, 0
-# was:	ori	2, _apply__17_, 0
-	jal	g
-# was:	jal	g, 2
+	ori	$2, $29, 0
+# was:	ori	_apply__18_, 29, 0
+	ori	$3, $0, 5
+# was:	ori	c_e_19_, 0, 5
+	sw	$3, -4($29)
+# was:	sw	c_e_19_, -4(29)
+	addi	$29, $29, -4
+# was:	addi	29, 29, -4
+	ori	$3, $29, 0
+# was:	ori	c_e_20_, 29, 0
+	ori	$4, $0, 2
+# was:	ori	c_e_21_, 0, 2
+	sw	$4, -4($29)
+# was:	sw	c_e_21_, -4(29)
+	addi	$29, $29, -4
+# was:	addi	29, 29, -4
+	ori	$4, $0, 0
+# was:	ori	c_e_22_, 0, 0
+	sw	$4, -4($29)
+# was:	sw	c_e_22_, -4(29)
+	addi	$29, $29, -4
+# was:	addi	29, 29, -4
+	sw	$3, -4($29)
+# was:	sw	c_e_20_, -4(29)
+	addi	$29, $29, -4
+# was:	addi	29, 29, -4
+# 	ori	2,_apply__18_,0
+	jal	f
+# was:	jal	f, 2
 # 	ori	dead,2,0
 	ori	$4, $2, 0
 # was:	ori	4, dead, 0
@@ -30,69 +44,46 @@ _lend__19_:
 	syscall
 	j	_stop_
 # 
-g:
+f:
 	sw	$31, -4($29)
-	addi	$29, $29, -8
-# 	ori	g_arg__1_,2,0
-	ori	$3, $2, 0
-# was:	ori	_patVar_x__6_, g_arg__1_, 0
-# 
-_case_7_:
-	sw	$31, -4($29)
-# was:	sw	31, -4(29)
-	addi	$29, $29, -8
-# was:	addi	29, 29, -8
-# 	ori	_case_7__arg__8_,2,0
-	ori	$3, $0, -1
-# was:	ori	3, 0, -1
-# was:	ori	_truePat__13_, 0, -1
-	bne	$2, $3, _match__12_
-# was:	bne	2, 3, _match__12_
-# was:	bne	_case_7__arg__8_, _truePat__13_, _match__12_
+	sw	$16, -8($29)
+	addi	$29, $29, -12
+# 	ori	f_arg__1_,2,0
+	bne	$2, $0, _lnext__5_
+# was:	bne	f_arg__1_, 0, _lnext__5_
 	ori	$2, $0, 1
-# was:	ori	2, 0, 1
-# was:	ori	_case_7__res__9_, 0, 1
-	j	_case_7__return__10_
-_match__12_:
-	ori	$3, $0, 0
-# was:	ori	3, 0, 0
-# was:	ori	_falsePat__15_, 0, 0
-	bne	$2, $3, _match__14_
-# was:	bne	2, 3, _match__14_
-# was:	bne	_case_7__arg__8_, _falsePat__15_, _match__14_
-	ori	$2, $0, 0
-# was:	ori	2, 0, 0
-# was:	ori	_case_7__res__9_, 0, 0
-	j	_case_7__return__10_
-_match__14_:
-	j	_case_7__fail__11_
-_case_7__return__10_:
-# 	ori	2,_case_7__res__9_,0
-	addi	$29, $29, 8
-# was:	addi	29, 29, 8
-	lw	$31, -4($29)
-# was:	lw	31, -4(29)
-	jr	$31
-# was:	jr	31, 
-_case_7__fail__11_:
-	ori	$5, $0, 4
-# was:	ori	5, 0, 4
-	j	_Error_
-	ori	$2, $3, 0
-# was:	ori	_apply__16_, _patVar_x__6_, 0
-# 	ori	2,_apply__16_,0
-	jal	_case_7_
-# was:	jal	_case_7_, 2
-# 	ori	g_res__2_,2,0
-	j	g_return__3_
-_match__5_:
-	j	g_fail__4_
-g_return__3_:
-# 	ori	2,g_res__2_,0
-	addi	$29, $29, 8
+# was:	ori	f_res__2_, 0, 1
+	j	f_return__3_
+_lnext__5_:
+# nice
+	lw	$16, -4($2)
+# was:	lw	_me_7_, -4(f_arg__1_)
+# lol
+# 	ori	_patVar_x__9_,_me_7_,0
+# hej
+	lw	$2, -8($2)
+# was:	lw	_me_11_, -8(f_arg__1_)
+# lol
+# 	ori	_patVar_y__13_,_me_11_,0
+# hej
+# 	ori	_plus1__15_,_patVar_x__9_,0
+# 	ori	_apply__17_,_patVar_y__13_,0
+# 	ori	2,_apply__17_,0
+	jal	f
+# was:	jal	f, 2
+# 	ori	_plus2__16_,2,0
+	add	$2, $16, $2
+# was:	add	f_res__2_, _plus1__15_, _plus2__16_
+	j	f_return__3_
+_lnext__6_:
+	j	f_fail__4_
+f_return__3_:
+# 	ori	2,f_res__2_,0
+	addi	$29, $29, 12
+	lw	$16, -8($29)
 	lw	$31, -4($29)
 	jr	$31
-g_fail__4_:
+f_fail__4_:
 	ori	$5, $0, 3
 	j	_Error_
 _stop_:

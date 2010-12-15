@@ -8,6 +8,18 @@ struct
   (* Use "raise Error (message,position)" for error messages *)
   exception Error of string*(int*int)
 
+ (** A striped datatype for the types of expressions. **)
+  datatype Type = Int | Bool | TyVar of string
+
+  (**
+  * Strip extra type information returned from the parser.
+  **)
+  fun stripType x =
+    case x of
+      Cat.Int _ => Int
+    | Cat.Bool _ => Bool
+    | Cat.TyVar (name, _) => TyVar(name)
+
   (* Name generator.  Call with, e.g., t1 = "tmp"^newName () *)
   val counter = ref 0
 
@@ -36,27 +48,29 @@ struct
   val maxReg = 26      (* highest allocatable register *)
 
   (* compile pattern *)
-  fun compilePat p v vtable fail =
+  fun compilePat p v vtable ttable fail =
     case p of
       Cat.NumP (n,pos) =>
         let
-	  val t = "_constPat_"^newName()
+	        val t = "_constPat_"^newName()
         in
           if n < 32768 then
-	    ([Mips.LI (t, makeConst n),
-	      Mips.BNE (v,t,fail)],
-	     vtable)
-	  else
-	    ([Mips.LUI (t, makeConst (n div 65536)),
-	      Mips.ORI (t, t, makeConst (n mod 65536)),
-	      Mips.BNE (v,t,fail)],
-	     vtable)
-	end
+	          ([
+              Mips.LI (t, makeConst n),
+	            Mips.BNE (v,t,fail)
+             ], vtable)
+	        else
+	          ([
+              Mips.LUI (t, makeConst (n div 65536)),
+	            Mips.ORI (t, t, makeConst (n mod 65536)),
+	            Mips.BNE (v,t,fail)
+             ], vtable)
+	      end
     | Cat.VarP (x,pos) =>
         let
           val xt = "_patVar_"^x^"_"^newName()
         in
-          ([Mips.MOVE (xt,v)], (x,xt)::vtable)
+          ([Mips.MOVE (xt,v), Mips.COMMENT "hej"], (x,xt)::vtable)
         end
 
     | Cat.FalseP (n,pos) =>
@@ -68,21 +82,58 @@ struct
           vtable)
       end
 
-    | Cat.TrueP (n,pos) =>
+    | Cat.TrueP (n, _) =>
       let
         val t = "_truePat_"^newName()
       in
         ([Mips.LI (t, makeConst ~1), 
-          Mips.BNE (v,t,fail)], 
+          Mips.BNE (v, t, fail)], 
           vtable)
       end
 
+    | Cat.NullP _ =>
+        ([Mips.BNE (v, "0", fail)], vtable)
+    | Cat.TupleP (plist, _) => 
+        let
+          fun iter [] myvtable _ = ([], myvtable)
+            | iter (pat::pats) myvtable offset = 
+              let
+                val me = "_me" ^ newName ()
+                val te = "_te" ^ newName ()
+                val (mcp, mvtable) = compilePat pat me myvtable ttable fail
+                val (tcp, tvtable) = compilePat pat te myvtable ttable fail
+                val (x, xvtable) = 
+                  (case pat of 
+                     Cat.TupleP _ => 
+                     (
+                      [
+                       Mips.MOVE(te, v),
+                       Mips.ADDI(te, te, makeConst (offset + 4))
+                      ] @ tcp, tvtable
+                     ) 
+                   | _ => 
+                     (
+                      [
+                       Mips.LW(me, v, makeConst offset),  
+                       Mips.COMMENT "lol"
+                      ] @ mcp, mvtable
+                     )
+                  )
+                val (pp, pvtable) = iter pats xvtable (offset - 4)
+              in
+                (x @ pp, pvtable)
+              end
+          val (mips, table) = iter plist vtable ~4
+        in
+          (* move so that other patterns still can use the argument register *)
+          ([Mips.COMMENT "nice"] @ mips, table)
+        end
 
   (* compile expression *)
-  fun compileExp e vtable place =
+  fun compileExp e vtable ttable place =
   let
-    val mtrue = Mips.ORI (place, "0", makeConst ~1)
-    val mfalse = Mips.ORI (place, "0", makeConst 0)
+    val mtrue   = Mips.ORI (place, "0", makeConst ~1)
+    val mfalse  = Mips.ORI (place, "0", makeConst 0)
   in
     case e of
       Cat.Num (n, _) =>
@@ -94,16 +145,30 @@ struct
           ]
     | Cat.True  _ => [mtrue]
     | Cat.False _ => [mfalse]
+    | Cat.Null _ => [mfalse]
+    | Cat.MkTuple (es, name, _) =>
+        let
+          fun iter [] = []
+            | iter (e::es) = 
+              let
+                val re = name ^ "_e" ^ newName ()
+                val ce = compileExp e vtable ttable re
+              in
+                ce @ [Mips.SW(re, SP,"-4"), Mips.ADDI(SP, SP, "-4")] @ iter es
+              end
+        in
+          [Mips.MOVE(place,SP)] @ iter es
+        end
     | Cat.Not (e, _)  => 
         let
           val re    = "_re_"      ^ newName ()
           val lend  = "_lend_"    ^ newName ()
-          val lelse = "_lelse_"    ^ newName ()
-          val ce    = compileExp e vtable re
+          val lelse = "_lelse_"   ^ newName ()
+          val ce    = compileExp e vtable ttable re
         in
           ce @ 
           [
-           Mips.BEQ (re, "0", lend),
+           Mips.BEQ (re, "0", lelse),
            mfalse,
            Mips.J lend,
            Mips.LABEL lelse,
@@ -117,8 +182,8 @@ struct
           val rt    = "_rt_"      ^ newName ()
           val rd    = "_rd_"      ^ newName ()
           val lend  = "_lend_"    ^ newName ()
-          val cs   = compileExp e1 vtable rs
-          val ct   = compileExp e2 vtable rt
+          val cs   = compileExp e1 vtable ttable rs
+          val ct   = compileExp e2 vtable ttable rt
         in
           cs @ ct @
           [
@@ -130,47 +195,63 @@ struct
         end
     | Cat.Equal (e1, e2, _) =>
         let
-          val rs    = "_rs_"      ^ newName ()
-          val rt    = "_rt_"      ^ newName ()
-          val rd    = "_rd_"      ^ newName ()
-          val ltrue = "_ltrue_"   ^ newName ()
-          val lend  = "_lend_"    ^ newName ()
-          val cs   = compileExp e1 vtable rs
-          val ct   = compileExp e2 vtable rt
+          val rs    = "_rs"      ^ newName ()
+          val rt    = "_rt"      ^ newName ()
+          val rd    = "_rd"      ^ newName ()
+          val lelse = "_lelse"   ^ newName ()
+          val lend  = "_lend"    ^ newName ()
+          val cs   = compileExp e1 vtable ttable rs
+          val ct   = compileExp e2 vtable ttable rt
         in
           cs @ ct @
           [
            Mips.XOR (place, rs, rt),
-           Mips.BEQ (place, "0", ltrue),
+           Mips.BEQ (place, "0", lelse),
            mfalse,
            Mips.J lend,
-           Mips.LABEL ltrue,
+           Mips.LABEL lelse,
            mtrue,
            Mips.LABEL lend
           ]
         end
     | Cat.And (e1, e2, _) =>
         let
-          val cs = compileExp e1 vtable place
-          val ct = compileExp e2 vtable place
+          val c1 = compileExp e1 vtable ttable place
+          val c2 = compileExp e2 vtable ttable place
           val lend  = "_lend"    ^ newName ()
         in
-          cs @ [Mips.BEQ (place, "0", lend)] @ ct @ [Mips.LABEL lend]
+          c1 @ 
+          [Mips.BEQ (place, "0", lend)] @ 
+          c2 @
+          [
+           Mips.BEQ (place, "0", lend), 
+           mtrue, 
+           Mips.LABEL lend
+          ]
         end
     | Cat.Or (e1, e2, _) =>
         let
-          val cs = compileExp e1 vtable place
-          val ct = compileExp e2 vtable place
+          val c1 = compileExp e1 vtable ttable place
+          val c2 = compileExp e2 vtable ttable place
+          val lelse  = "_lelse"    ^ newName ()
           val lend  = "_lend"    ^ newName ()
         in
-          cs @ [Mips.BNE (place, "0", lend)] @ ct @ [Mips.LABEL lend]
+          c1 @ 
+          [Mips.BNE (place, "0", lelse)] @ 
+          c2 @ 
+          [
+           Mips.BEQ (place, "0", lend),
+           Mips.LABEL lelse,
+           mtrue,
+           Mips.LABEL lend
+          ]
         end
     | Cat.If (e1, e2, e3, _) => 
         let
           val r1 = "_r1" ^ newName ()
-          val c1 = compileExp e1 vtable r1
-          val c2 = compileExp e2 vtable place
-          val c3 = compileExp e3 vtable place
+          val c1 = compileExp e1 vtable ttable r1
+          val c2 = compileExp e2 vtable ttable place
+          val c3 = compileExp e3 vtable ttable place
           val lelse  = "_lelse"    ^ newName ()
           val lend  = "_lend"    ^ newName ()
         in
@@ -181,74 +262,84 @@ struct
     | Cat.Case (e, m, p) =>
         let
           val lf = "_case" ^ newName ()
-          val cf = compileFun (lf, Cat.Int (0,0), Cat.Int (0,0), m, p)
+          val cf = compileFun vtable ttable (lf, Cat.Int (0,0), Cat.Int (0,0), m, p)
         in
-          cf @ (compileExp (Cat.Apply (lf, e, p)) vtable place)
+          cf @ (compileExp (Cat.Apply (lf, e, p)) vtable ttable place)
         end
 
-    | Cat.Let ([], e, _) => (compileExp e vtable place)
+    | Cat.Let ([], e, _) => (compileExp e vtable ttable place)
     | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
         let
-          val rl = "_let" ^ newName ()
+          val rde = "_apply" ^ newName ()
+          val exit = "_case_return" ^ newName ()
+          val cde = compileExp de vtable ttable rde
+          val body = 
+            compileMatch [(dp, Cat.Let(decs, exp, pos))] rde place 
+            exit exit vtable ttable
         in
-        compileExp 
-        (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos)) 
-        vtable rl
-        @ [Mips.OR (place, "0", rl)]
+          cde @ body @ [Mips.LABEL exit]
         end
-    (* TODO: Make Let work. *)
 
-    | Cat.Var (x,pos) => [Mips.MOVE (place, lookup x vtable pos)]
-    | Cat.Plus (e1,e2,pos) =>
+    | Cat.Var (x, pos) => [Mips.MOVE (place, lookup x vtable pos)]
+    | Cat.Plus (e1, e2, _) =>
         let
-	  val t1 = "_plus1_"^newName()
-	  val t2 = "_plus2_"^newName()
-          val code1 = compileExp e1 vtable t1
-          val code2 = compileExp e2 vtable t2
-	in
-	  code1 @ code2 @ [Mips.ADD (place,t1,t2)]
-	end
-    | Cat.Minus (e1,e2,pos) =>
-        let
-	  val t1 = "_minus1_"^newName()
-	  val t2 = "_minus2_"^newName()
-          val code1 = compileExp e1 vtable t1
-          val code2 = compileExp e2 vtable t2
-	in
-	  code1 @ code2 @ [Mips.SUB (place,t1,t2)]
-	end
-    | Cat.Apply (f,e,pos) =>
-	      let
-	        val t1 = "_apply_"^newName()
-	        val code1 = compileExp e vtable t1
+	        val re1 = "_plus1_" ^ newName ()
+	        val re2 = "_plus2_" ^ newName ()
+          val ce1 = compileExp e1 vtable ttable re1
+          val ce2 = compileExp e2 vtable ttable re2
 	      in
-	        code1 @
-          [Mips.MOVE ("2",t1), Mips.JAL (f,["2"]), Mips.MOVE (place,"2")]
+	        ce1 @ ce2 @ [Mips.ADD (place, re1, re2)]
+	      end
+    | Cat.Minus (e1, e2, _) =>
+        let
+	        val re1 = "_minus1_" ^ newName ()
+	        val re2 = "_minus2_" ^ newName ()
+          val ce1 = compileExp e1 vtable ttable re1
+          val ce2 = compileExp e2 vtable ttable re2
+	      in
+	        ce1 @ ce2 @ [Mips.SUB (place, re1, re2)]
+	      end
+    | Cat.Apply (f, e, _) =>
+	      let
+	        val re = "_apply_"^newName()
+	        val ce = compileExp e vtable ttable re
+	      in
+	        ce @
+          [
+           Mips.MOVE ("2", re), 
+           Mips.JAL (f, ["2"]), 
+           Mips.MOVE (place, "2")
+          ]
 	      end
     | Cat.Read pos =>
-        [Mips.LI ("2","5"), (* read_int syscall *)
+        [
+         Mips.LI ("2","5"), (* read_int syscall *)
          Mips.SYSCALL,
-         Mips.MOVE (place,"2")]
-    | Cat.Write (e,pos) =>
-	compileExp e vtable place
-        @ [Mips.MOVE ("4",place),
-	   Mips.LI ("2","1"),  (* write_int syscall *)
-	   Mips.SYSCALL,
-	   Mips.LA ("4","_cr_"),
-	   Mips.LI ("2","4"),  (* write_string syscall *)
-	   Mips.SYSCALL]
+         Mips.MOVE (place,"2")
+        ]
+    | Cat.Write (e,pos) => 
+        (compileExp e vtable ttable place) @ 
+        [
+         Mips.MOVE ("4",place),
+	       Mips.LI ("2","1"),  (* write_int syscall *)
+	       Mips.SYSCALL,
+	       Mips.LA ("4","_cr_"),
+	       Mips.LI ("2","4"),  (* write_string syscall *)
+	       Mips.SYSCALL
+        ]
   end
-  and compileMatch [] arg res endLabel failLabel vtable =
-        [Mips.J failLabel]
-    | compileMatch ((p,e)::m) arg res endLabel failLabel vtable =
+
+
+  and compileMatch [] arg res endLabel failLabel vtable ttable = [Mips.J failLabel]
+    | compileMatch ((p,e)::m) arg res endLabel failLabel vtable ttable =
         let
-	  val next = "_match_"^newName()
-	  val (code1, vtable1) = compilePat p arg vtable next
-	  val code2 = compileExp e vtable1 res
-	  val code3 = compileMatch m arg res endLabel failLabel vtable
-	in
-	  code1 @ code2 @ [Mips.J endLabel, Mips.LABEL next] @ code3
-	end
+	        val lnext = "_lnext_" ^ newName ()
+	        val (cp, vtable1) = compilePat p arg vtable ttable lnext
+	        val ce = compileExp e vtable1 ttable res
+	        val cm = compileMatch m arg res endLabel failLabel vtable ttable
+	      in
+	        cp @ ce @ [Mips.J endLabel, Mips.LABEL lnext] @ cm
+	      end
 
   (* code for saving and restoring callee-saves registers *)
   and stackSave currentReg maxReg savecode restorecode offset =
@@ -268,21 +359,21 @@ struct
 
 
   (* compile function declaration *)
-  and compileFun (fname, argty, resty, m, (line,col)) =
+  and compileFun vtable ttable (fname, argty, resty, m, (line,col)) =
         let
-	  val atmp = fname ^"_arg_"^ newName()
+	        val atmp = fname ^"_arg_"^ newName()
           val rtmp = fname ^"_res_"^ newName()
           val exit = fname ^"_return_"^ newName()
           val fail = fname ^"_fail_"^ newName()
-	  val parcode       (* move R2 to argument *)
+	        val parcode       (* move R2 to argument *)
             = [Mips.MOVE (atmp, "2")]
           val returncode    (* move return value to R2 *)
             = [Mips.LABEL exit, Mips.MOVE ("2",rtmp)]
           val errorcode     (* if match fails *)
-	    = [Mips.LABEL fail,
-	       Mips.LI ("5",makeConst line),
-	       Mips.J "_Error_"]
-          val body = compileMatch m atmp rtmp exit fail []
+	          = [Mips.LABEL fail,
+	             Mips.LI ("5",makeConst line),
+	             Mips.J "_Error_"]
+          val body = compileMatch m atmp rtmp exit fail vtable ttable
           val (body1, _, maxr)  (* call register allocator *)
             = RegAlloc.registerAlloc
                 (parcode @ body @ returncode) ["2"] 2 maxCaller maxReg
@@ -302,12 +393,13 @@ struct
 	  @ errorcode
         end
 
+ (*  fun compileFun vtable (fname, argty, resty, m, (line,col)) = *)
 
   (* compile program *)
   fun compile (tys, funs, e) =
     let
-      val funsCode = List.concat (List.map compileFun funs)
-      val mainCode = compileExp e [] "dead" @ [Mips.J "_stop_"]
+      val funsCode = List.concat (List.map (compileFun [] tys) funs)
+      val mainCode = compileExp e [] tys "dead" @ [Mips.J "_stop_"]
       val (code1, _, _)
              = RegAlloc.registerAlloc mainCode [] 2 maxCaller maxReg
     in

@@ -422,12 +422,6 @@ state 26
 	.  error
 
 
-27: shift/reduce conflict (shift 42, reduce 37) on AND
-27: shift/reduce conflict (shift 44, reduce 37) on EQUALS
-27: shift/reduce conflict (shift 45, reduce 37) on LT
-27: shift/reduce conflict (shift 46, reduce 37) on MINUS
-27: shift/reduce conflict (shift 47, reduce 37) on OR
-27: shift/reduce conflict (shift 48, reduce 37) on PLUS
 state 27
 	Exp : Exp . PLUS Exp  (27)
 	Exp : Exp . MINUS Exp  (28)
@@ -437,19 +431,19 @@ state 27
 	Exp : Exp . OR Exp  (33)
 	Exp : ID Exp .  (37)
 
-	AND  shift 42
-	EQUALS  shift 44
-	LT  shift 45
-	MINUS  shift 46
-	OR  shift 47
-	PLUS  shift 48
+	AND  reduce 37
 	BAR  reduce 37
 	COMMA  reduce 37
 	ELSE  reduce 37
 	END  reduce 37
 	EOF  reduce 37
+	EQUALS  reduce 37
 	IN  reduce 37
+	LT  reduce 37
+	MINUS  reduce 37
 	OF  reduce 37
+	OR  reduce 37
+	PLUS  reduce 37
 	RPAR  reduce 37
 	SEMICOLON  reduce 37
 	THEN  reduce 37
@@ -599,12 +593,6 @@ state 40
 	.  error
 
 
-41: shift/reduce conflict (shift 42, reduce 39) on AND
-41: shift/reduce conflict (shift 44, reduce 39) on EQUALS
-41: shift/reduce conflict (shift 45, reduce 39) on LT
-41: shift/reduce conflict (shift 46, reduce 39) on MINUS
-41: shift/reduce conflict (shift 47, reduce 39) on OR
-41: shift/reduce conflict (shift 48, reduce 39) on PLUS
 state 41
 	Exp : Exp . PLUS Exp  (27)
 	Exp : Exp . MINUS Exp  (28)
@@ -614,19 +602,19 @@ state 41
 	Exp : Exp . OR Exp  (33)
 	Exp : WRITE Exp .  (39)
 
-	AND  shift 42
-	EQUALS  shift 44
-	LT  shift 45
-	MINUS  shift 46
-	OR  shift 47
-	PLUS  shift 48
+	AND  reduce 39
 	BAR  reduce 39
 	COMMA  reduce 39
 	ELSE  reduce 39
 	END  reduce 39
 	EOF  reduce 39
+	EQUALS  reduce 39
 	IN  reduce 39
+	LT  reduce 39
+	MINUS  reduce 39
 	OF  reduce 39
+	OR  reduce 39
+	PLUS  reduce 39
 	RPAR  reduce 39
 	SEMICOLON  reduce 39
 	THEN  reduce 39
@@ -1484,9 +1472,7 @@ state 100
 	.  reduce 4
 
 
-State 27 contains 6 shift/reduce conflicts.
 State 37 contains 1 shift/reduce conflict.
-State 41 contains 6 shift/reduce conflicts.
 
 
 39 terminals, 13 nonterminals

@@ -24,6 +24,7 @@
 %nonassoc NOT
 %nonassoc LT EQUALS
 %left PLUS MINUS
+%right WRITE
 
 %start Prog
 %type <Cat.Prog> Prog

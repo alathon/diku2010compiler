@@ -19,6 +19,18 @@ struct
   (**
   * Strip extra type information returned from the parser.
   **)
+  fun checkType ttable xy x =
+    case x of
+      Cat.Int _ => Int
+    | Cat.Bool _ => Bool
+    | Cat.TyVar (name, _) => 
+        (case (lookup name ttable) of 
+           SOME _ => TyVar(name) 
+         | _ => raise Error ("Undefined type " ^ name, xy))
+        
+  (**
+  * Strip extra type information returned from the parser.
+  **)
   fun stripType x =
     case x of
       Cat.Int _ => Int
@@ -40,16 +52,20 @@ struct
       (Cat.NumP _, Int)     => rest
     | (Cat.TrueP _, Bool)   => rest
     | (Cat.FalseP _, Bool)  => rest
-    | (Cat.NullP _, Null)   => rest
+    | (Cat.NullP p, TyVar(name))   =>
+        let
+          val _ = 
+          (case (lookup name ttable) of 
+             SOME x => x
+           | NONE => raise Error ("Undefined type "^name, p))
+        in
+          rest
+        end        
     | (Cat.VarP (name,p), tyvar) => 
         let
-          val x = 
-            (case (lookup name vtable) of
-               SOME _ => raise Error ("Duplicate definition", p)
-             | NONE => ())
           val value = (name, tyvar, p)
          in
-           (x; (value :: (checkPat pats tys ttable (value :: vtable) pos)))
+           (value :: (checkPat pats tys ttable (value :: vtable) pos))
          end
     | (Cat.TupleP (plist, p), TyVar(name))  =>
         let val tupletys = 
@@ -122,12 +138,12 @@ struct
 
       | Cat.If (e1,e2,e3,pos) =>
         let
-          val v1 = shortCheckExp e1
           val v2 = shortCheckExp e2
           val v3 = shortCheckExp e3
+          (* Make sure if exp isn't a tuple. *)
+          val _ = tupleError (e1, pos)
         in
           if v2 <> v3 then raise Error ("Incompatible types", pos)
-          else if v1 <> Bool then raise Error ("Non-boolean expression", pos)
           else v2
         end
 
@@ -221,6 +237,7 @@ struct
   fun checkProgram (tyDecs, funDecs, e) =
     let
       val ttable = getTyDecs tyDecs []
+      val _ = List.map (fn (_, tys, xy) => List.map (checkType ttable xy) tys) ttable
       val ftable = getFunDecs funDecs []
       val _ = List.map (checkFunDec ftable ttable) funDecs
     in
