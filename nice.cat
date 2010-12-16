@@ -1,8 +1,14 @@
+type d = (int, int, int)
 type c = (int, c)
 
 fun f : c->int 
 	@ => 1
-|	(x,y) => x +(f y)
+|	(x,y) => x + (f y)
 end
 
-write f (5,(2, @:c):c):c
+fun g : d -> int 
+	@ => 1
+|	(x,y,z) => x + y + z
+end
+
+write f (5,(4,(3,@:c):c):c):c

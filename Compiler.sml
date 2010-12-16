@@ -33,6 +33,9 @@ struct
   fun lookup x [] pos = raise Error ("Name "^x^" not found", pos)
     | lookup x ((y,v)::table) pos = if x=y then v else lookup x table pos
 
+  fun lookup2 x [] pos = raise Error ("Name "^x^" not found", pos)
+    | lookup2 x ((y,v,_)::table) pos = if x=y then v else lookup2 x table pos
+
   fun isIn x [] = false
     | isIn x (y::ys) = x=y orelse isIn x ys
 
@@ -48,7 +51,7 @@ struct
   val maxReg = 26      (* highest allocatable register *)
 
   (* compile pattern *)
-  fun compilePat p v vtable ttable fail =
+  fun compilePat p v tyname vtable ttable fail offset =
     case p of
       Cat.NumP (n,pos) =>
         let
@@ -93,29 +96,59 @@ struct
 
     | Cat.NullP _ =>
         ([Mips.BNE (v, "0", fail)], vtable)
-    | Cat.TupleP (plist, _) => 
+
+   | Cat.TupleP (plist, pos) =>
+        let
+          val tylist = lookup2 tyname ttable pos
+          fun iter [] _ myvtable _ v = ([], myvtable, v)
+            | iter (pat :: pats) (ty::tys) myvtable offset mv =
+              let
+                val per = "_per" ^ newName ()
+                val (ntmips, ntvtable) = 
+                  compilePat pat per tyname myvtable ttable fail offset
+                val (pmips, pvtable, pmv) =
+                 (case (pat,ty) of
+                    (Cat.TupleP (tplist, p), Cat.TyVar(name,_)) =>
+                       iter tplist (lookup2 name ttable p) myvtable offset mv
+                  | (Cat.VarP (vn, _), Cat.TyVar(name, _)) => 
+                      
+                      ([Mips.MOVE (per,mv), 
+                      Mips.COMMENT "move per"], (vn, per) :: myvtable, per)
+                  | _ =>
+                    ([Mips.LW (per, mv, makeConst offset)] @ ntmips, ntvtable,
+                    per)
+                 )
+                val (imips, ivtable, imv) = iter pats tys pvtable (offset - 4) pmv
+              in
+                (pmips @ imips, ivtable, imv)
+              end
+          val (zmips, zvtable, _) = iter plist tylist vtable 0 v
+        in
+          (zmips, zvtable)
+        end
+(*     | Cat.TupleP (plist, _) => 
         let
           fun iter [] myvtable _ = ([], myvtable)
             | iter (pat::pats) myvtable offset = 
               let
-                val me = "_me" ^ newName ()
+                val me = "_me" ^ (makeConst offset) ^ v ^ newName ()
                 val te = "_te" ^ newName ()
-                val (mcp, mvtable) = compilePat pat me myvtable ttable fail
-                val (tcp, tvtable) = compilePat pat te myvtable ttable fail
+                val (mcp, mvtable) = 
+                  compilePat pat me myvtable ttable fail offset
+                val (tcp, tvtable) = 
+                  compilePat pat v myvtable ttable fail offset
                 val (x, xvtable) = 
                   (case pat of 
                      Cat.TupleP _ => 
                      (
-                      [
-                       Mips.MOVE(te, v),
-                       Mips.ADDI(te, te, makeConst (offset + 4))
-                      ] @ tcp, tvtable
+                      
+                      [Mips.COMMENT "TupleP"] @ tcp, tvtable
                      ) 
                    | _ => 
                      (
                       [
                        Mips.LW(me, v, makeConst offset),  
-                       Mips.COMMENT "lol"
+                       Mips.COMMENT "OtherP"
                       ] @ mcp, mvtable
                      )
                   )
@@ -128,7 +161,7 @@ struct
           (* move so that other patterns still can use the argument register *)
           ([Mips.COMMENT "nice"] @ mips, table)
         end
-
+        *)
   (* compile expression *)
   fun compileExp e vtable ttable place =
   let
@@ -154,7 +187,7 @@ struct
                 val re = name ^ "_e" ^ newName ()
                 val ce = compileExp e vtable ttable re
               in
-                ce @ [Mips.SW(re, SP,"-4"), Mips.ADDI(SP, SP, "-4")] @ iter es
+                ce @ [Mips.SW(re, SP,"0"), Mips.ADDI(SP, SP, "-4")] @ iter es
               end
         in
           [Mips.MOVE(place,SP)] @ iter es
@@ -274,7 +307,7 @@ struct
           val exit = "_case_return" ^ newName ()
           val cde = compileExp de vtable ttable rde
           val body = 
-            compileMatch [(dp, Cat.Let(decs, exp, pos))] rde place 
+            compileMatch [(dp, Cat.Let(decs, exp, pos))] "" rde place 
             exit exit vtable ttable
         in
           cde @ body @ [Mips.LABEL exit]
@@ -330,13 +363,13 @@ struct
   end
 
 
-  and compileMatch [] arg res endLabel failLabel vtable ttable = [Mips.J failLabel]
-    | compileMatch ((p,e)::m) arg res endLabel failLabel vtable ttable =
+  and compileMatch [] atype arg res endLabel failLabel vtable ttable = [Mips.J failLabel]
+    | compileMatch ((p,e)::m) atype arg res endLabel failLabel vtable ttable =
         let
 	        val lnext = "_lnext_" ^ newName ()
-	        val (cp, vtable1) = compilePat p arg vtable ttable lnext
+	        val (cp, vtable1) = compilePat p arg atype vtable ttable lnext 0
 	        val ce = compileExp e vtable1 ttable res
-	        val cm = compileMatch m arg res endLabel failLabel vtable ttable
+	        val cm = compileMatch m atype arg res endLabel failLabel vtable ttable
 	      in
 	        cp @ ce @ [Mips.J endLabel, Mips.LABEL lnext] @ cm
 	      end
@@ -365,6 +398,10 @@ struct
           val rtmp = fname ^"_res_"^ newName()
           val exit = fname ^"_return_"^ newName()
           val fail = fname ^"_fail_"^ newName()
+          val tyname = 
+            (case (argty) of
+               (Cat.TyVar(name,_)) => name
+             | _ => "")
 	        val parcode       (* move R2 to argument *)
             = [Mips.MOVE (atmp, "2")]
           val returncode    (* move return value to R2 *)
@@ -373,7 +410,7 @@ struct
 	          = [Mips.LABEL fail,
 	             Mips.LI ("5",makeConst line),
 	             Mips.J "_Error_"]
-          val body = compileMatch m atmp rtmp exit fail vtable ttable
+          val body = compileMatch m tyname atmp rtmp exit fail vtable ttable
           val (body1, _, maxr)  (* call register allocator *)
             = RegAlloc.registerAlloc
                 (parcode @ body @ returncode) ["2"] 2 maxCaller maxReg
@@ -407,7 +444,7 @@ struct
        Mips.GLOBL "main",
        Mips.LABEL "main",
        Mips.LA (HP, "_heap_")]    (* initialise heap pointer *)
-      @ code1                     (* run program *)
+      @ code1                    (* run program *)
       @ funsCode		  (* code for functions *)
       @ [Mips.LABEL "_stop_",
          Mips.LI ("2","10"),      (* syscall control = 10 *)
