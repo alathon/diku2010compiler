@@ -176,7 +176,7 @@ struct
         in
           cs @ ct @
           [
-           Mips.SLT (rd, rs, rt), (*TODO: make unsigned. *)
+           Mips.SLT (rd, rs, rt),
            Mips.BEQ (rd, "0", lend),
            mtrue,
            Mips.LABEL lend
@@ -214,7 +214,6 @@ struct
           c2 @
           [
            Mips.BEQ (place, "0", lend), 
-           mtrue, 
            Mips.LABEL lend
           ]
         end
@@ -222,16 +221,13 @@ struct
         let
           val c1 = compileExp e1 vtable ttable place
           val c2 = compileExp e2 vtable ttable place
-          val lelse  = "_lelse"    ^ newName ()
           val lend  = "_lend"    ^ newName ()
         in
           c1 @ 
-          [Mips.BNE (place, "0", lelse)] @ 
+          [Mips.BNE (place, "0", lend)] @ 
           c2 @ 
           [
            Mips.BEQ (place, "0", lend),
-           Mips.LABEL lelse,
-           mtrue,
            Mips.LABEL lend
           ]
         end
