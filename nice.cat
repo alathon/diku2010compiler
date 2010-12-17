@@ -1,8 +1,13 @@
 type c = (int,c)
 
 fun f : c -> int 
-  @ => 0 
-| (x,y) => x + f y
+  @ => 1
+| (x,(y,z)) => x + y + f z
 end
 
-write f (5, (3, @:c):c):c
+fun g : c -> int
+  x => let y=x in if x = y then 2 else 3
+end
+
+//write g 5
+write g (5,(4,@:c):c):c

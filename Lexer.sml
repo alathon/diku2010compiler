@@ -1,48 +1,48 @@
 local open Obj Lexing in
 
-
- open Lexing;
-
- exception LexicalError of string * (int * int) (* (message, (line, column)) *)
-
- val currentLine = ref 1
- val lineStartPos = ref [0]
-
- fun getPos lexbuf = getLineCol (getLexemeStart lexbuf)
-				(!currentLine)
-				(!lineStartPos)
-
- and getLineCol pos line (p1::ps) =
-       if pos>=p1 then (line, pos-p1)
-       else getLineCol pos (line-1) ps
-   | getLineCol pos line [] = raise LexicalError ("",(0,0))
-
- fun lexerError lexbuf s = 
-     raise LexicalError (s, getPos lexbuf)
-
- fun keyword (s, pos) =
-     case s of
-         "end"          => Parser.END pos
-       | "type"         => Parser.TYPE pos
-       | "int"          => Parser.INT pos
-       | "bool"         => Parser.BOOL pos
-       | "true"         => Parser.TRUE pos
-       | "false"        => Parser.FALSE pos
-       | "fun"          => Parser.FUN pos
-       | "read"         => Parser.READ pos
-       | "write"        => Parser.WRITE pos
-       | "not"          => Parser.NOT pos
-       | "and"          => Parser.AND pos
-       | "or"           => Parser.OR pos
-       | "let"          => Parser.LET pos
-       | "if"           => Parser.IF pos
-       | "then"         => Parser.THEN pos
-       | "else"         => Parser.ELSE pos
-       | "case"         => Parser.CASE pos
-       | "of"           => Parser.OF pos
-       | "in"           => Parser.IN pos
-       | _              => Parser.ID (s, pos)
-
+
+ open Lexing;
+
+ exception LexicalError of string * (int * int) (* (message, (line, column)) *)
+
+ val currentLine = ref 1
+ val lineStartPos = ref [0]
+
+ fun getPos lexbuf = getLineCol (getLexemeStart lexbuf)
+				(!currentLine)
+				(!lineStartPos)
+
+ and getLineCol pos line (p1::ps) =
+       if pos>=p1 then (line, pos-p1)
+       else getLineCol pos (line-1) ps
+   | getLineCol pos line [] = raise LexicalError ("",(0,0))
+
+ fun lexerError lexbuf s = 
+     raise LexicalError (s, getPos lexbuf)
+
+ fun keyword (s, pos) =
+     case s of
+         "end"          => Parser.END pos
+       | "type"         => Parser.TYPE pos
+       | "int"          => Parser.INT pos
+       | "bool"         => Parser.BOOL pos
+       | "true"         => Parser.TRUE pos
+       | "false"        => Parser.FALSE pos
+       | "fun"          => Parser.FUN pos
+       | "read"         => Parser.READ pos
+       | "write"        => Parser.WRITE pos
+       | "not"          => Parser.NOT pos
+       | "and"          => Parser.AND pos
+       | "or"           => Parser.OR pos
+       | "let"          => Parser.LET pos
+       | "if"           => Parser.IF pos
+       | "then"         => Parser.THEN pos
+       | "else"         => Parser.ELSE pos
+       | "case"         => Parser.CASE pos
+       | "of"           => Parser.OF pos
+       | "in"           => Parser.IN pos
+       | _              => Parser.ID (s, pos)
+
  
 fun action_19 lexbuf = (
  lexerError lexbuf "Illegal symbol in input" )
@@ -77,13 +77,13 @@ and action_5 lexbuf = (
 and action_4 lexbuf = (
  keyword (getLexeme lexbuf,getPos lexbuf) )
 and action_3 lexbuf = (
- case Int.fromString (getLexeme lexbuf) of
-                               NONE   => lexerError lexbuf "Bad integer"
+ case Int.fromString (getLexeme lexbuf) of
+                               NONE   => lexerError lexbuf "Bad integer"
                              | SOME i => Parser.NUM (i, getPos lexbuf) )
 and action_2 lexbuf = (
- currentLine := !currentLine+1;
-                          lineStartPos :=  getLexemeStart lexbuf
-			                   :: !lineStartPos;
+ currentLine := !currentLine+1;
+                          lineStartPos :=  getLexemeStart lexbuf
+			                   :: !lineStartPos;
                           Token lexbuf )
 and action_1 lexbuf = (
  Token lexbuf )

@@ -113,7 +113,9 @@ struct
             else Bool
     
       | Cat.Less  x => binIntOperator x "<" Bool
-      | Cat.Equal x => binIntOperator x "=" Bool
+      | Cat.Equal (e1, e2, xy) => (*binIntOperator x "=" Bool *)
+           if(shortCheckExp e1 = shortCheckExp e2) then Bool
+           else raise Error ("Incompatible types", xy)
       | Cat.Plus  x => binIntOperator x "+" Int
       | Cat.Minus x => binIntOperator x "-" Int
 
@@ -143,13 +145,14 @@ struct
 
       | Cat.If (e1, e2, e3, xy) =>
         let
+          val v1 = shortCheckExp e1
           val v2 = shortCheckExp e2
           val v3 = shortCheckExp e3
           (* Make sure if exp isn't a tuple. *)
         in
           if v2 <> v3 then raise Error ("Incompatible types", xy)
-          else if v2 <> Bool then raise Error ("Non-bool type in if statement", xy)
-          else Bool
+          else if v1 <> Bool then raise Error ("Non-bool type in if statement", xy)
+          else v2
         end
 
       | Cat.Case (exp, matches, xy) => 
