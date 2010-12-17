@@ -1,13 +1,11 @@
-type c = (int,c)
+type c = (int, int)
 
-fun f : c -> int 
-  @ => 1
-| (x,(y,z)) => x + y + f z
+fun f : c -> bool
+	(x, y) => x < y
 end
 
-fun g : c -> int
-  x => let y=x in if x = y then 2 else 3
+fun g : int -> int
+	x => if x < 6 and f(2,3):c or f(3,2):c then 1 else 0
 end
 
-//write g 5
-write g (5,(4,@:c):c):c
+write g 5

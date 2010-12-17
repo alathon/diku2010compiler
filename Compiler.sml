@@ -119,7 +119,8 @@ struct
       end
       
   (**
-  * Compiles expression
+  * Compiles the given expression, the result is stored in place.
+  * Returns the required Mips code and a new vtable.
   **)
   fun compileExp e vtable place =
   let
@@ -322,16 +323,20 @@ struct
         ]
   end
 
-
-  and compileMatch [] atype arg res endLabel failLabel vtable = [Mips.J failLabel]
-    | compileMatch ((p,e)::m) atype arg res endLabel failLabel vtable =
+  (**
+  * Compiles a list of matches, by going through each
+  * and 
+  * 
+  **)
+  and compileMatch [] _ _ _ _ fail _ = [Mips.J fail]
+    | compileMatch ((p,e) :: matches) atype arg res exit fail vtable =
         let
 	        val lnext = "_lnext_" ^ newName ()
 	        val (cp, vtable1) = compilePat p arg vtable lnext
 	        val ce = compileExp e vtable1 res
-	        val cm = compileMatch m atype arg res endLabel failLabel vtable
+	        val cm = compileMatch matches atype arg res exit fail vtable
 	      in
-	        cp @ ce @ [Mips.J endLabel, Mips.LABEL lnext] @ cm
+	        cp @ ce @ [Mips.J exit, Mips.LABEL lnext] @ cm
 	      end
 
   (* code for saving and restoring callee-saves registers *)
