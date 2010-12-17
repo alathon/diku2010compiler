@@ -10,6 +10,16 @@ main:
 	jal	f
 # was:	jal	f, 2
 # 	ori	dead,2,0
+	ori	$4, $2, 0
+# was:	ori	4, dead, 0
+	ori	$2, $0, 1
+# was:	ori	2, 0, 1
+	syscall
+	la	$4, _cr_
+# was:	la	4, _cr_
+	ori	$2, $0, 4
+# was:	ori	2, 0, 4
+	syscall
 	j	_stop_
 # 
 f:
