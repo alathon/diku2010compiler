@@ -1,0 +1,10 @@
+// test2.cat
+// add bool and bool
+
+type c = (bool,bool)
+
+fun nice: c -> int
+    (x,y) => x+y
+end
+
+nice (true,false):c
