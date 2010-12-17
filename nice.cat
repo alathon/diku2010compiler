@@ -1,11 +1,15 @@
-type c = (int, int)
+type list = (int,list)
+type lili = (list,list)
 
-fun f : c -> bool
-	(x, y) => x < y
+fun f : lili -> int
+	@ => 0
+|	(x,y) => g x + g y
 end
 
-fun g : int -> int
-	x => if x < 6 and f(2,3):c or f(3,2):c then 1 else 0
+fun g : list -> int
+	@ => 0
+|	(x, y) => x + g y
 end
 
-write g 5
+//(5,(4,@:list):list):list
+f ((5,@:list):list, (4,@:list):list):lili

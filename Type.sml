@@ -149,7 +149,6 @@ struct
           val v1 = shortCheckExp e1
           val v2 = shortCheckExp e2
           val v3 = shortCheckExp e3
-          (* Make sure if exp isn't a tuple. *)
         in
           if v2 <> v3 then raise Error ("Incompatible types", xy)
           else if v1 <> Bool then raise Error ("Non-bool type in if statement", xy)
