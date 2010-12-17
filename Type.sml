@@ -104,11 +104,18 @@ struct
       | Cat.True  _ => Bool
       | Cat.False _ => Bool
 
-      | Cat.Not   x => tupleError x "NOT"
+      | Cat.Not   (x,xy) => 
+          if shortCheckExp x <> Bool 
+            then raise Error("Non-bool argument to not operator", xy)
+            else tupleError (x,xy) "NOT"
       | Cat.And   (e1, e2, xy) =>
-          (tupleError (e1, xy) "AND";tupleError (e2, xy) "AND")
+          if shortCheckExp e1 <> Bool orelse shortCheckExp e2 <> Bool
+            then raise Error("Non-bool argument to and operator", xy)
+            else (tupleError (e1, xy) "AND";tupleError (e2, xy) "AND")
       | Cat.Or    (e1, e2, xy) =>
-          (tupleError (e1, xy) "OR";tupleError (e2, xy) "OR")
+          if shortCheckExp e1 <> Bool orelse shortCheckExp e2 <> Bool
+            then raise Error("Non-bool argument to or operator", xy)
+            else (tupleError (e1, xy) "OR";tupleError (e2, xy) "OR")
     
       | Cat.Less  x => binIntOperator x "<" Bool
       | Cat.Equal x => binIntOperator x "=" Bool
@@ -147,6 +154,7 @@ struct
           val _ = tupleError (e1, xy)
         in
           if v2 <> v3 then raise Error ("Incompatible types", xy)
+          else if v2 <> Bool then raise Error ("Non-bool type in if statement", xy)
           else v2
         end
 
