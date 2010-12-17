@@ -113,12 +113,13 @@ struct
             else Bool
     
       | Cat.Less  x => binIntOperator x "<" Bool
-      | Cat.Equal (e1, e2, xy) => (*binIntOperator x "=" Bool *)
-           if(shortCheckExp e1 = shortCheckExp e2) then Bool
-           else raise Error ("Incompatible types", xy)
       | Cat.Plus  x => binIntOperator x "+" Int
       | Cat.Minus x => binIntOperator x "-" Int
-
+      
+      | Cat.Equal (e1, e2, xy) =>
+           if(shortCheckExp e1 = shortCheckExp e2) then Bool
+           else raise Error ("Incompatible types", xy)
+      
       | Cat.Var   x => shortLookup x vtable "variable" 
     
       | Cat.Null (name, xy) => 
