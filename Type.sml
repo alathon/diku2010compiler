@@ -107,7 +107,7 @@ struct
       | Cat.Not   x => tupleError x "NOT"
       | Cat.And   (e1, e2, xy) =>
           (tupleError (e1, xy) "AND";tupleError (e2, xy) "AND")
-      | Cat.Or    (e1, e2, xy) =>
+      | Cat.Or    (e1, e2, xy) =>
           (tupleError (e1, xy) "OR";tupleError (e2, xy) "OR")
     
       | Cat.Less  x => binIntOperator x "<" Bool

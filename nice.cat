@@ -1,6 +1,8 @@
-fun f : int -> int
-  3 => write 4
-| 4 => write 5
+type c = (int,bool)
+
+fun f : c -> int 
+  (5,true) => write 4
+| (10,false) => write 5
 end
 
-write f 6
+write f (5,true):c
