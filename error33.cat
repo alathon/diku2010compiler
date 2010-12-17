@@ -1,0 +1,9 @@
+// test14.cat
+// Use of non-int let-variable in Exp PLUS Exp, where that variable is a tuple
+
+type c = (int,int)
+
+let x = true;
+	y = (3,4):c
+in
+	x+y

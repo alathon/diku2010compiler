@@ -1,0 +1,8 @@
+// test9.cat
+// Pattern type != case expression type, where patern type is a tuple
+
+type c = (int,int)
+
+case 3 of
+ (x,y) => 5
+end

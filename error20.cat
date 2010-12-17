@@ -1,0 +1,9 @@
+// test1.cat
+// writes a tuple
+
+type c = (int,int)
+
+fun nice: c -> int
+   (x,y) => write (x,y):c
+end  
+nice (5,4):c

@@ -1,0 +1,10 @@
+// test13.cat
+// Function result doesn't match return type, where return type is a tuple
+
+type c = (int,int)
+
+fun nice : int -> int
+	x => (5,100):c
+end
+
+nice 5

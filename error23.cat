@@ -1,0 +1,10 @@
+// test4.cat
+// sub bool and bool
+
+type c = (bool,bool)
+
+fun nice: c -> int
+    (x,y) => x-y
+end
+
+nice (true,true):c
