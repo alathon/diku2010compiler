@@ -1,4 +1,6 @@
 *.asm
+CC
+*.swp
 *.uo
 *.output
 *.ui
