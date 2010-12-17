@@ -92,11 +92,6 @@ struct
       fun shortLookup (name, xy) table strType =
         (case lookup name table of SOME value => value
          | _ => raise Error ("Unbound " ^ strType ^ ":" ^ name, xy))
-      fun tupleError (e, xy) strOperator =
-        (case (shortCheckExp e) of
-           TyVar _ => raise Error (
-           "Operator " ^ strOperator ^ " not compative with tuples", xy)
-         | _ => Bool)
     in
       case (exp) of
         Cat.Num   _ => Int
@@ -107,15 +102,15 @@ struct
       | Cat.Not   (x,xy) => 
           if shortCheckExp x <> Bool 
             then raise Error("Non-bool argument to not operator", xy)
-            else tupleError (x,xy) "NOT"
+            else Bool
       | Cat.And   (e1, e2, xy) =>
           if shortCheckExp e1 <> Bool orelse shortCheckExp e2 <> Bool
             then raise Error("Non-bool argument to and operator", xy)
-            else (tupleError (e1, xy) "AND";tupleError (e2, xy) "AND")
+            else Bool
       | Cat.Or    (e1, e2, xy) =>
           if shortCheckExp e1 <> Bool orelse shortCheckExp e2 <> Bool
             then raise Error("Non-bool argument to or operator", xy)
-            else (tupleError (e1, xy) "OR";tupleError (e2, xy) "OR")
+            else Bool
     
       | Cat.Less  x => binIntOperator x "<" Bool
       | Cat.Equal x => binIntOperator x "=" Bool
@@ -151,11 +146,10 @@ struct
           val v2 = shortCheckExp e2
           val v3 = shortCheckExp e3
           (* Make sure if exp isn't a tuple. *)
-          val _ = tupleError (e1, xy)
         in
           if v2 <> v3 then raise Error ("Incompatible types", xy)
           else if v2 <> Bool then raise Error ("Non-bool type in if statement", xy)
-          else v2
+          else Bool
         end
 
       | Cat.Case (exp, matches, xy) => 
