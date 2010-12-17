@@ -20,24 +20,25 @@ struct
     | Cat.Bool _ => Bool
     | Cat.TyVar (name, _) => TyVar(name)
 
-  (* Name generator.  Call with, e.g., t1 = "tmp"^newName () *)
+  (**
+  * Name generator.  Call with, e.g., t1 = "tmp" ^ newName () 
+  **)
   val counter = ref 0
 
   fun newName () = (counter := !counter + 1;
                   "_" ^ Int.toString (!counter)^ "_")
 
-  (* Number to text with spim-compatible sign symbol *)
+  (**
+  * Number to text with spim-compatible sign symbol 
+  **)
   fun makeConst n = if n>=0 then Int.toString n
                     else "-" ^ Int.toString (~n)
 
+  (**
+  * Lookup the value of some symbol in some symbol table.
+  **)
   fun lookup x [] pos = raise Error ("Name "^x^" not found", pos)
     | lookup x ((y,v)::table) pos = if x=y then v else lookup x table pos
-
-  fun lookup2 x [] pos = raise Error ("Name "^x^" not found", pos)
-    | lookup2 x ((y,v,_)::table) pos = if x=y then v else lookup2 x table pos
-
-  fun isIn x [] = false
-    | isIn x (y::ys) = x=y orelse isIn x ys
 
   (* link register *)
   val RA = "31"
@@ -55,7 +56,7 @@ struct
     case p of
       Cat.NumP (n,pos) =>
         let
-	        val t = "_constPat_"^newName()
+	        val t = "_NumP"^newName()
         in
           if n < 32768 then
 	          ([
@@ -69,28 +70,28 @@ struct
 	            Mips.BNE (v,t,fail)
              ], vtable)
 	      end
-    | Cat.VarP (x,pos) =>
+    | Cat.VarP (x, _) =>
         let
-          val xt = "_patVar_"^x^"_"^newName()
+          val xt = "_VarP_" ^ x ^ newName ()
         in
-          ([Mips.MOVE (xt,v), Mips.COMMENT "hej"], (x,xt)::vtable)
+          ([Mips.MOVE (xt, v)], (x, xt)::vtable)
         end
 
-    | Cat.FalseP (n,pos) =>
+    | Cat.FalseP _ =>
       let
-        val t = "_falsePat_"^newName()
+        val rf = "_FalseP" ^ newName ()
       in
-        ([Mips.LI (t, makeConst 0), 
-          Mips.BNE (v,t,fail)], 
+        ([Mips.LUI (rf, makeConst 0), 
+          Mips.BNE (v, rf, fail)], 
           vtable)
       end
 
-    | Cat.TrueP (n, _) =>
+    | Cat.TrueP _ =>
       let
-        val t = "_truePat_"^newName()
+        val rt = "_TrueP" ^ newName ()
       in
-        ([Mips.LI (t, makeConst ~1), 
-          Mips.BNE (v, t, fail)], 
+        ([Mips.LUI (rt, makeConst ~1), 
+          Mips.BNE (v, rt, fail)], 
           vtable)
       end
 
@@ -105,7 +106,7 @@ struct
             let
               val rpe = "_rpe" ^ newName ()
               val (pmips, pvtable) = 
-                compilePat pat rpe myvtable fail (offset - 4)
+                compilePat pat rpe myvtable fail 0
               val (imips, ivtable) = 
                 iter pats pvtable (offset-4) sp
             in
@@ -117,7 +118,9 @@ struct
         (x @ xmips, xvtable)
       end
       
-  (* compile expression *)
+  (**
+  * Compiles expression
+  **)
   fun compileExp e vtable ttable place =
   let
     val mtrue   = Mips.ORI (place, "0", makeConst ~1)

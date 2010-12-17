@@ -1,8 +1,8 @@
-type c = (int,bool)
+type c = (int,c)
 
 fun f : c -> int 
-  (5,true) => write 4
-| (10,false) => write 5
+  @ => 1
+| (x,(y,z)) => x + y + f z
 end
 
-write f (5,true):c
+write f (5,(4,@:c):c):c
