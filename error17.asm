@@ -18,8 +18,8 @@ f:
 # 	ori	f_arg__1_,2,0
 	ori	$3, $0, 3
 # was:	ori	_constPat__6_, 0, 3
-	bne	$2, $3, _match__5_
-# was:	bne	f_arg__1_, _constPat__6_, _match__5_
+	bne	$2, $3, _lnext__5_
+# was:	bne	f_arg__1_, _constPat__6_, _lnext__5_
 	ori	$3, $0, 4
 # was:	ori	f_res__2_, 0, 4
 	ori	$4, $3, 0
@@ -33,11 +33,11 @@ f:
 # was:	ori	2, 0, 4
 	syscall
 	j	f_return__3_
-_match__5_:
+_lnext__5_:
 	ori	$3, $0, 4
 # was:	ori	_constPat__8_, 0, 4
-	bne	$2, $3, _match__7_
-# was:	bne	f_arg__1_, _constPat__8_, _match__7_
+	bne	$2, $3, _lnext__7_
+# was:	bne	f_arg__1_, _constPat__8_, _lnext__7_
 	ori	$3, $0, 5
 # was:	ori	f_res__2_, 0, 5
 	ori	$4, $3, 0
@@ -51,7 +51,7 @@ _match__5_:
 # was:	ori	2, 0, 4
 	syscall
 	j	f_return__3_
-_match__7_:
+_lnext__7_:
 	j	f_fail__4_
 f_return__3_:
 	ori	$2, $3, 0

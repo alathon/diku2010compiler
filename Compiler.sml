@@ -51,7 +51,7 @@ struct
   val maxReg = 26      (* highest allocatable register *)
 
   (* compile pattern *)
-  fun compilePat p v tyname vtable ttable fail offset =
+  fun compilePat p v vtable fail offset =
     case p of
       Cat.NumP (n,pos) =>
         let
@@ -95,73 +95,28 @@ struct
       end
 
     | Cat.NullP _ =>
-        ([Mips.BNE (v, "0", fail)], vtable)
+       ([Mips.BNE (v, "0", fail)], vtable)
 
-   | Cat.TupleP (plist, pos) =>
-        let
-          val tylist = lookup2 tyname ttable pos
-          fun iter [] _ myvtable _ v = ([], myvtable, v)
-            | iter (pat :: pats) (ty::tys) myvtable offset mv =
-              let
-                val per = "_per" ^ newName ()
-                val (ntmips, ntvtable) = 
-                  compilePat pat per tyname myvtable ttable fail offset
-                val (pmips, pvtable, pmv) =
-                 (case (pat,ty) of
-                    (Cat.TupleP (tplist, p), Cat.TyVar(name,_)) =>
-                       iter tplist (lookup2 name ttable p) myvtable offset mv
-                  | (Cat.VarP (vn, _), Cat.TyVar(name, _)) => 
-                      
-                      ([Mips.MOVE (per,mv), 
-                      Mips.COMMENT "move per"], (vn, per) :: myvtable, per)
-                  | _ =>
-                    ([Mips.LW (per, mv, makeConst offset)] @ ntmips, ntvtable,
-                    per)
-                 )
-                val (imips, ivtable, imv) = iter pats tys pvtable (offset - 4) pmv
-              in
-                (pmips @ imips, ivtable, imv)
-              end
-          val (zmips, zvtable, _) = iter plist tylist vtable 0 v
-        in
-          (zmips, zvtable)
-        end
-(*     | Cat.TupleP (plist, _) => 
-        let
-          fun iter [] myvtable _ = ([], myvtable)
-            | iter (pat::pats) myvtable offset = 
-              let
-                val me = "_me" ^ (makeConst offset) ^ v ^ newName ()
-                val te = "_te" ^ newName ()
-                val (mcp, mvtable) = 
-                  compilePat pat me myvtable ttable fail offset
-                val (tcp, tvtable) = 
-                  compilePat pat v myvtable ttable fail offset
-                val (x, xvtable) = 
-                  (case pat of 
-                     Cat.TupleP _ => 
-                     (
-                      
-                      [Mips.COMMENT "TupleP"] @ tcp, tvtable
-                     ) 
-                   | _ => 
-                     (
-                      [
-                       Mips.LW(me, v, makeConst offset),  
-                       Mips.COMMENT "OtherP"
-                      ] @ mcp, mvtable
-                     )
-                  )
-                val (pp, pvtable) = iter pats xvtable (offset - 4)
-              in
-                (x @ pp, pvtable)
-              end
-          val (mips, table) = iter plist vtable ~4
-        in
-          (* move so that other patterns still can use the argument register *)
-          ([Mips.COMMENT "nice"] @ mips, table)
-        end
-        *)
+    | Cat.TupleP (plist, pos) => 
+      let
+        val ta = "_ta" ^ newName ()
+        fun iter [] myvtable _ sp = ([], myvtable)
+          | iter (pat :: pats) myvtable offset sp =
+            let
+              val rpe = "_rpe" ^ newName ()
+              val (pmips, pvtable) = 
+                compilePat pat rpe myvtable fail (offset - 4)
+              val (imips, ivtable) = 
+                iter pats pvtable (offset-4) sp
+            in
+              ([Mips.LW(rpe, sp, makeConst (offset-4))] @ pmips @ imips, ivtable) 
+            end
+        val x = [Mips.LW(ta, v, "0")]
+        val (xmips, xvtable) = iter plist vtable 0 ta
+      in
+        (x @ xmips, xvtable)
+      end
+      
   (* compile expression *)
   fun compileExp e vtable ttable place =
   let
@@ -179,7 +134,7 @@ struct
     | Cat.True  _ => [mtrue]
     | Cat.False _ => [mfalse]
     | Cat.Null _ => [mfalse]
-    | Cat.MkTuple (es, name, _) =>
+    | Cat.MkTuple (exps, name, _) =>
         let
           fun iter [] = []
             | iter (e::es) = 
@@ -190,7 +145,8 @@ struct
                 ce @ [Mips.SW(re, SP,"0"), Mips.ADDI(SP, SP, "-4")] @ iter es
               end
         in
-          [Mips.MOVE(place,SP)] @ iter es
+          [Mips.MOVE(place,SP), Mips.SW(SP, SP, "0"), Mips.ADDI (SP, SP, "-4")]
+          @ iter exps
         end
     | Cat.Not (e, _)  => 
         let
@@ -301,16 +257,21 @@ struct
         end
 
     | Cat.Let ([], e, _) => (compileExp e vtable ttable place)
-    | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
+    | Cat.Let (((dp, de, dpos) :: decs), exp, (line, column)) =>
         let
           val rde = "_apply" ^ newName ()
-          val exit = "_case_return" ^ newName ()
+          val exit = "_case_exit" ^ newName ()
+          val fail = "_cas_fail"^ newName()
           val cde = compileExp de vtable ttable rde
+          val errorcode     (* if match fails *)
+	          = [Mips.LABEL fail,
+	             Mips.LI ("5", makeConst line),
+	             Mips.J "_Error_"]
           val body = 
-            compileMatch [(dp, Cat.Let(decs, exp, pos))] "" rde place 
-            exit exit vtable ttable
+            compileMatch [(dp, Cat.Let(decs, exp, (line, column)))] "" rde place 
+            exit fail vtable ttable
         in
-          cde @ body @ [Mips.LABEL exit]
+          cde @ body @ errorcode @ [Mips.LABEL exit]
         end
 
     | Cat.Var (x, pos) => [Mips.MOVE (place, lookup x vtable pos)]
@@ -367,7 +328,7 @@ struct
     | compileMatch ((p,e)::m) atype arg res endLabel failLabel vtable ttable =
         let
 	        val lnext = "_lnext_" ^ newName ()
-	        val (cp, vtable1) = compilePat p arg atype vtable ttable lnext 0
+	        val (cp, vtable1) = compilePat p arg vtable lnext 0
 	        val ce = compileExp e vtable1 ttable res
 	        val cm = compileMatch m atype arg res endLabel failLabel vtable ttable
 	      in

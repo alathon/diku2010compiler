@@ -1,14 +1,6 @@
-type d = (int, int, int)
-type c = (int, c)
-
-fun f : c->int 
-	@ => 1
-|	(x,y) => x + (f y)
+fun f : int -> int
+  3 => write 4
+| 4 => write 5
 end
 
-fun g : d -> int 
-	@ => 1
-|	(x,y,z) => x + y + z
-end
-
-write f (5,(4,(3,@:c):c):c):c
+write f 6

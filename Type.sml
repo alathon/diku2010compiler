@@ -16,26 +16,29 @@ struct
     | lookup needle ((key, value, _) :: haystack) =
         if needle = key then SOME value else lookup needle haystack
 
+
   (**
   * Strip extra type information returned from the parser.
   **)
-  fun checkType ttable xy x =
-    case x of
-      Cat.Int _ => Int
-    | Cat.Bool _ => Bool
-    | Cat.TyVar (name, _) => 
-        (case (lookup name ttable) of 
-           SOME _ => TyVar(name) 
-         | _ => raise Error ("Undefined type " ^ name, xy))
-        
-  (**
-  * Strip extra type information returned from the parser.
-  **)
-  fun stripType x =
-    case x of
+  fun stripType ty =
+    case ty of
       Cat.Int _ => Int
     | Cat.Bool _ => Bool
     | Cat.TyVar (name, _) => TyVar(name)
+
+  (**
+  * Strip extra type information returned from the parser.
+  * In case of tyvar check that the type is declared in ttable.
+  **)
+  fun checkType ttable xy ty =
+    (case (stripType ty) of
+       TyVar (name) => 
+        (case (lookup name ttable) of 
+           SOME _ => TyVar (name) 
+         | _ => raise Error ("Undefined type " ^ name, xy)
+        )
+     | value => value
+    )
 
   (** 
   * Check pattern and return vtable.
@@ -44,28 +47,28 @@ struct
   * by the grammar.
   **)
   fun checkPat [] [] _ vtable _  = vtable
-    | checkPat [] _ _ _ pos = raise Error ("Pattern too short for tuple", pos)
-    | checkPat _ [] _ _ pos = raise Error ("Tuple too short for pattern", pos)
-    | checkPat (pat::pats) (ty::tys) ttable vtable pos =
-    let val rest = checkPat pats tys ttable vtable pos in
+    | checkPat [] _ _ _ xy = raise Error ("Pattern too short for tuple", xy)
+    | checkPat _ [] _ _ xy = raise Error ("Tuple too short for pattern", xy)
+    | checkPat (pat::pats) (ty::tys) ttable vtable xy =
+    let val rest = checkPat pats tys ttable vtable xy in
     (case (pat,ty) of
       (Cat.NumP _, Int)     => rest
     | (Cat.TrueP _, Bool)   => rest
     | (Cat.FalseP _, Bool)  => rest
-    | (Cat.NullP p, TyVar(name))   =>
+    | (Cat.NullP nxy, TyVar(name))   =>
         let
           val _ = 
-          (case (lookup name ttable) of 
-             SOME x => x
-           | NONE => raise Error ("Undefined type "^name, p))
+          (case (lookup name ttable) of SOME x => x
+           | _ => raise Error ("Undefined type " ^ name, nxy)
+          )
         in
           rest
         end        
-    | (Cat.VarP (name,p), tyvar) => 
+    | (Cat.VarP (name, p), tyvar) => 
         let
           val value = (name, tyvar, p)
          in
-           (value :: (checkPat pats tys ttable (value :: vtable) pos))
+           (value :: (checkPat pats tys ttable (value :: vtable) xy))
          end
     | (Cat.TupleP (plist, p), TyVar(name))  =>
         let val tupletys = 
@@ -73,9 +76,9 @@ struct
              SOME x => List.map stripType x
            | NONE => raise Error ("Undefined type "^name, p))
         in
-          (checkPat plist tupletys ttable vtable pos) @ rest
+          (checkPat plist tupletys ttable vtable xy) @ rest
         end
-    | _ => raise Error ("Pattern doesn't match type", pos)
+    | _ => raise Error ("Pattern doesn't match type", xy)
     )
     end
 
@@ -104,7 +107,7 @@ struct
       | Cat.Not   x => tupleError x "NOT"
       | Cat.And   (e1, e2, xy) =>
           (tupleError (e1, xy) "AND";tupleError (e2, xy) "AND")
-      | Cat.Or    (e1, e2, xy) =>
+      | Cat.Or    (e1, e2, xy) =>
           (tupleError (e1, xy) "OR";tupleError (e2, xy) "OR")
     
       | Cat.Less  x => binIntOperator x "<" Bool
@@ -118,41 +121,41 @@ struct
           (case (lookup name ttable) of SOME _ => TyVar(name)
            | _ => raise Error ("Unbound type:" ^ name, xy))
 
-      | Cat.MkTuple (explist, tyname, pos) =>
+      | Cat.MkTuple (explist, tyname, xy) =>
         let
-          val tylist = shortLookup (tyname, pos) ttable "type"
+          val tylist = shortLookup (tyname, xy) ttable "type"
 
-          fun iter (t::ts) (e::es) pos =
+          fun iter (t::ts) (e::es) xy =
             if (stripType t) = (shortCheckExp e)
-              then iter ts es pos
+              then iter ts es xy
             else 
-              raise Error("Tuple type mismatch", pos)
-          | iter [] (e::es) pos =
-              raise Error("Too many expressions for tuple", pos)
-          | iter (t::ts) [] pos =
-              raise Error("Too few expressions for tuple", pos)
-          | iter [] [] pos = () 
+              raise Error("Tuple type mismatch", xy)
+          | iter [] (e::es) xy =
+              raise Error("Too many expressions for tuple", xy)
+          | iter (t::ts) [] xy =
+              raise Error("Too few expressions for tuple", xy)
+          | iter [] [] xy = () 
         in
-          (iter tylist explist pos;TyVar(tyname))
+          (iter tylist explist xy;TyVar(tyname))
         end
 
-      | Cat.If (e1,e2,e3,pos) =>
+      | Cat.If (e1, e2, e3, xy) =>
         let
           val v2 = shortCheckExp e2
           val v3 = shortCheckExp e3
           (* Make sure if exp isn't a tuple. *)
-          val _ = tupleError (e1, pos)
+          val _ = tupleError (e1, xy)
         in
-          if v2 <> v3 then raise Error ("Incompatible types", pos)
+          if v2 <> v3 then raise Error ("Incompatible types", xy)
           else v2
         end
 
-      | Cat.Case (exp, matches, pos) => 
-          checkMatches matches (shortCheckExp exp) vtable ftable ttable pos
+      | Cat.Case (exp, matches, xy) => 
+          checkMatches matches (shortCheckExp exp) vtable ftable ttable xy
     
       | Cat.Let ([], e, _) => shortCheckExp e
-      | Cat.Let (((dp, de, dpos) :: decs), exp, pos) =>
-          shortCheckExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, pos))], dpos))
+      | Cat.Let (((dp, de, dxy) :: decs), exp, xy) =>
+          shortCheckExp (Cat.Case (de, [(dp, Cat.Let(decs, exp, xy))], dxy))
 
       | Cat.Apply (name, e, xy) =>
          (case lookup name ftable of SOME (atype, rtype) =>
@@ -234,13 +237,13 @@ struct
   (**
   * Type-checks the entire program text. 
   **)
-  fun checkProgram (tyDecs, funDecs, e) =
+  fun checkProgram (tyDecs, funDecs, exp) =
     let
       val ttable = getTyDecs tyDecs []
       val _ = List.map (fn (_, tys, xy) => List.map (checkType ttable xy) tys) ttable
       val ftable = getFunDecs funDecs []
       val _ = List.map (checkFunDec ftable ttable) funDecs
     in
-      (checkExp e [] ftable ttable; ())
+      (checkExp exp [] ftable ttable; ())
     end
 end
