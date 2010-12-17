@@ -5,4 +5,9 @@ fun f : c -> int
 | (x,(y,z)) => x + y + f z
 end
 
-write f (5,(4,@:c):c):c
+fun g : c -> int
+  x => let y=x in if x = y then 2 else 3
+end
+
+//write g 5
+write g (5,(4,@:c):c):c
