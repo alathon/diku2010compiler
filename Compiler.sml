@@ -52,7 +52,7 @@ struct
   val maxReg = 26      (* highest allocatable register *)
 
   (* compile pattern *)
-  fun compilePat p v vtable fail offset =
+  fun compilePat p v vtable fail =
     case p of
       Cat.NumP (n, _) =>
         let
@@ -62,19 +62,19 @@ struct
 	          ([
               Mips.LI (rn, makeConst n),
 	            Mips.BNE (v, rn, fail)
-             ], vtable, offset)
+             ], vtable)
 	        else
 	          ([
               Mips.LUI (rn, makeConst (n div 65536)),
 	            Mips.ORI (rn, rn, makeConst (n mod 65536)),
 	            Mips.BNE (v, rn, fail)
-             ], vtable, offset)
+             ], vtable)
 	      end
     | Cat.VarP (x, _) =>
         let
           val rx = "_VarP_" ^ x ^ newName ()
         in
-          ([Mips.MOVE (rx, v)], (x, rx)::vtable, offset)
+          ([Mips.MOVE (rx, v)], (x, rx)::vtable)
         end
 
     | Cat.FalseP _ =>
@@ -83,7 +83,7 @@ struct
       in
         ([Mips.LI (rf, makeConst 0), 
           Mips.BNE (v, rf, fail)], 
-          vtable, offset)
+          vtable)
       end
 
     | Cat.TrueP _ =>
@@ -92,31 +92,35 @@ struct
       in
         ([Mips.LI (rt, makeConst ~1), 
           Mips.BNE (v, rt, fail)], 
-          vtable, offset)
+          vtable)
       end
 
     | Cat.NullP _ =>
-       ([Mips.BNE (v, "0", fail)], vtable, offset)
+       ([Mips.BNE (v, "0", fail)], vtable)
 
-    | Cat.TupleP (plist, pos) => 
-      let
-        fun iter [] myvtable offset sp = ([], myvtable, offset)
-          | iter (pat :: pats) myvtable offset sp =
+    | Cat.TupleP (plist, _) => 
+        let
+          fun iter [] myvtable hp = ([], myvtable)
+            | iter (pat :: pats) myvtable hp =
             let
-              val rpe = "_rpe" ^ newName ()
-              val x = "_x" ^ newName ()
-              val (pmips, pvtable, poffset) = 
-                compilePat pat rpe myvtable fail offset
-              val (imips, ivtable, ioffset) = 
-                iter pats pvtable offset sp
+              val mhp = "_mhp" ^ newName ()
+              val (pmips, pvtable) =
+                compilePat pat mhp myvtable fail
+              val (imips, ivtable) =
+                iter pats pvtable hp
+              (* Note that the iter uses the vtable constructed from compiling
+              * the pattern.*)
             in
-              ([Mips.LW(rpe, sp, "4"), Mips.ADDI (sp, sp, "4")] 
-              @ pmips @ imips, ivtable, offset) 
+              (
+               [Mips.LW(mhp, hp, "0")] @ 
+               pmips @ 
+               [Mips.ADDI(hp, hp, "4")] @ 
+               imips
+              , ivtable)
             end
-        val (xmips, xvtable, xoffset) = iter plist vtable offset v
-      in
-        (xmips, xvtable, offset)
-      end
+        in
+          iter plist vtable v
+        end
       
   (**
   * Compiles the given expression, the result is stored in place.
@@ -140,21 +144,21 @@ struct
     | Cat.Null _ => [mfalse]
     | Cat.MkTuple (exps, name, _) =>
         let
+          val hp = name ^ "_hp" ^ newName ()
           fun iter [] = []
-            | iter (e::es) = 
+            | iter (e :: es) =
               let
                 val re = name ^ "_e" ^ newName ()
                 val ce = compileExp e vtable re
-                val ci = 
-                  (case e of 
-                    Cat.MkTuple _ => 
-                       []
-                  | _ => [Mips.SW(re, HP,"0"), Mips.ADDI(HP, HP, "4")])
-              in
-                ce @ ci @ iter es
+              in 
+                ce @ [Mips.SW(re, hp, "0"), Mips.ADDI(hp, hp, "4")] @ iter es
               end
         in
-          [Mips.MOVE(place,HP), Mips.SW(HP, HP, "0"), Mips.ADDI(HP, HP, "4")]
+          [
+           Mips.MOVE(place, HP),
+           Mips.MOVE(hp,HP),
+           Mips.ADDI(HP, HP, makeConst (4*(List.length (exps))))
+          ]
           @ iter exps
         end
     | Cat.Not (e, _)  => 
@@ -262,7 +266,7 @@ struct
         end
 
     | Cat.Let ([], e, _) => (compileExp e vtable place)
-    | Cat.Let (((dp, de, dpos) :: decs), exp, (line, column)) =>
+    | Cat.Let (((dp, de, _) :: decs), exp, (line, column)) =>
         let
           val rde = "_apply" ^ newName ()
           val exit = "_case_exit" ^ newName ()
@@ -337,7 +341,7 @@ struct
     | compileMatch ((p,e) :: matches) atype arg res exit fail vtable =
         let
 	        val lnext = "_lnext_" ^ newName ()
-	        val (cp, vtable1, _) = compilePat p arg vtable lnext 0
+	        val (cp, vtable1) = compilePat p arg vtable lnext
 	        val ce = compileExp e vtable1 res
 	        val cm = compileMatch matches atype arg res exit fail vtable
 	      in

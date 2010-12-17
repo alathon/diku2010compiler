@@ -12,4 +12,4 @@ fun g : list -> int
 end
 
 //(5,(4,@:list):list):list
-f ((5,@:list):list, (4,@:list):list):lili
+write f ((5,@:list):list, (4,@:list):list):lili
